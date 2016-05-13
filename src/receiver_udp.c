@@ -57,17 +57,6 @@ int main (int argc, char *argv[]) {
 			exit(1);
 		}
 
-		// ******************************* NEW ******************************************************
-
-
-		
-
-
-
-
-
-		// *******************************************************************************************
-
 		printf("Received %d bytes from host %s port %d: %s", length, inet_ntoa(from.sin_addr), htons(from.sin_port), buff);
 
 		err = sendto(sockfd, "Message received\n", 17, 0, (struct sockaddr *)&from,fromlen);

@@ -42,67 +42,10 @@ int main (int argc, char *argv[]) {
 	// Address of the Receiver (Dotted to Network)
 	to.sin_addr.s_addr = inet_addr(argv[1]);
 
-	// ************************************** NEW *********************************************
-	
 
-	struct File {
-		char* fileName;
-		long fileSize;
-		
-
-
-
-	};
-
-	// Dateiname ohne Pfad 
-	char* fileInfo = argv[3];
-	char* sub = strdup(fileInfo);
-	fileName = basename(sub);
-
-	long SizeOfFile;
-	
-	FILE *fp;
-	// char str[] = "FOOBAR";
-	fp = fopen(fileInfo, "rb");
-	// Dateigroesse ermitteln
-	fseek(fp, 0L, SEEK_END);
-	SizeOfFile = ftell(fp);
-	rewind(fp);
-
-
-	
-
-
-
-
-
-
-	/*err = fwrite(str, 1, sizeof(str), fp);
-	if (err < 0) {
-		printf("fwrite-Problem");
-		exit(1);
-	}
-	*/
-
-	//strcat(fp, buff);
-	//printf("%s\n", buff);
-
-	//strcat(new_file, buff);
-	//FILE *fp;
-	//fp = fopen(new_file, "w+");
-	//err = fwrite(buff, 1, sizeof(buff), fp);
-	//if (err < 0) {
-	//	printf("shit.");
-	//	exit(1);
-	//}
-
-	printf("%s\n", str);
-
-	// ****************************************************************************************
-
-	// printf("enter something:");
+	printf("enter something:");
 	// Reads a line from the specified stream and stores it into the string pointed to by buff.
-	//fgets(buff, 256, stdin);
+	fgets(buff, 256, stdin);
 
 	err = sendto(sockfd, buff, strlen(buff), 0, (struct sockaddr *)&to, length);
 
