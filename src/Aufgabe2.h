@@ -33,4 +33,9 @@ static char* create_sha1_string(unsigned char* sha1){
   return result;
 }
 
+
+/****** OWN DEFINITIONS START HERE *******/
+#define BUFFERSIZE 255
+
+
 #endif

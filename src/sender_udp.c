@@ -9,13 +9,30 @@
 #include <arpa/inet.h>
 
 
+#include "Aufgabe2.h"
+#include "sender_udp.h"
+
+
+
 int main (int argc, char *argv[]) {
 	
 	int sockfd, err;
 	socklen_t length;
 	struct sockaddr_in to, from;
-	char buff[256];
+	//char buff[BUFFERSIZE];
+	unsigned short nlength;
+	char *name;
+	unsigned long filelength;
+	size_t bufferlength;
+	char* buff;
 
+
+	//fill dummy values
+	name = "Es war einmal mitten im Winter, und die Schneeflocken fielen wie Federn vom Himmel herab. Da saß eine Königin an einem Fenster, das einen Rahmen von schwarzem Ebenholz hatte, und nähte.";
+	nlength = strlen(name);
+	filelength = 128;
+
+	
 	if (argc != 4) {
 		printf("Illegal Arguments: [RECEIVER_ADDRESS] [RECEIVER_PORT] [FILE PATH]");
 		exit(1);
@@ -33,8 +50,8 @@ int main (int argc, char *argv[]) {
 	}
 
 	// Clearing
-	bzero(buff, 256);
-
+	//bzero(buff, BUFFERSIZE);
+	buff = calloc(nlength + 7, 1);
 
 	//CREATE TARGET ADDRESS
 	// Assign Protocol Family
@@ -45,14 +62,14 @@ int main (int argc, char *argv[]) {
 	length = sizeof(struct sockaddr_in);
 	// Address of the Receiver (Dotted to Network)
 	to.sin_addr.s_addr = inet_addr(argv[1]);
+	
 
+	
+	prepareHeader(buff, nlength, name, filelength);
 
-	//dummy message
-	printf("enter something:");
-	// Reads a line from the specified stream and stores it into the string pointed to by buff.
-	fgets(buff, 256, stdin);
-
-
+	printf("Standby for sending..");
+	bufferlength = nlength + 7;
+	
 	//send
 	err = sendto(sockfd, buff, strlen(buff), 0, (struct sockaddr *)&to, length);
 	//handle sending errors
@@ -74,8 +91,52 @@ int main (int argc, char *argv[]) {
 
 	printf("Got an ACK! %s Port: %d: %s", inet_ntoa(from.sin_addr), htons(from.sin_port), buff);
 
-	// Close Socket
+	
+	
+	// Close Socket*/
 	close(sockfd);
-
+	free(buff);
+	
 	return 0;
+}
+
+
+
+
+void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned long filelength)
+{
+
+    unsigned short i,j;
+    unsigned short buffersize;
+
+    buffersize = 7 + nlength;
+
+    
+    printf("initialising buffer\n");
+    bzero(buffer, buffersize);
+    
+
+    printf("Write header & length\n");
+    //TYPE-ID
+    buffer[0] = (char) HEADER_T;
+    buffer[1] = (char) (nlength & 0xff)-128;
+    buffer[2] = (char) ((nlength >> 8) & 0xff)-128;
+
+    printf("Write name\n");
+    for(i=3; i<nlength+3; i++)
+    {
+	buffer[i] = name[i-3];
+    }
+    
+
+    printf("write filelength\n");
+
+    for(j = 0; j < 4; j++)
+    {
+	buffer[++i] = (char) ( (filelength >> (j*8) ) & 0xff )- 128;
+    }
+  
+    printf("Done.");
+  
+
 }
