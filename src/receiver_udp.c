@@ -1,13 +1,18 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 int main (int argc, char *argv[]) {
 
-	int sockfd, length, fromlen, err;
+	int sockfd, length,  err;
 	struct sockaddr_in to, from;
+	socklen_t fromlen;
 
 	char buff[1024];
 

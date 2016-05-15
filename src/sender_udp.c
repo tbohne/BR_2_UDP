@@ -1,4 +1,7 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -7,7 +10,8 @@
 
 int main (int argc, char *argv[]) {
 	
-	int sockfd, length, err;
+	int sockfd, err;
+	socklen_t length;
 	struct sockaddr_in to, from;
 	char buff[256];
 
@@ -54,7 +58,7 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 
-	err = recvfrom(sockfd, buff, 256, 0, (struct sockaddr *)&from, &length);
+	err = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&from, &length);
 
 	if (err < 0) {
 		printf("recvfrom-Problem");
