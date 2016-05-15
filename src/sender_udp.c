@@ -51,8 +51,10 @@ int main (int argc, char *argv[]) {
 
 	// Clearing
 	//bzero(buff, BUFFERSIZE);
-	buff = calloc(nlength + 7, 1);
+	bufferlength = nlength + 8;
 
+	buff = calloc(bufferlength, 1);
+	
 	//CREATE TARGET ADDRESS
 	// Assign Protocol Family
 	to.sin_family = AF_INET;
@@ -66,17 +68,18 @@ int main (int argc, char *argv[]) {
 
 	
 	prepareHeader(buff, nlength, name, filelength);
-
+	printf("Length of name +7 = %d\nbuffersize: %zu\n", nlength+7, strlen(buff));
+	
 	printf("Standby for sending..");
-	bufferlength = nlength + 7;
 	
 	//send
-	err = sendto(sockfd, buff, strlen(buff), 0, (struct sockaddr *)&to, length);
+	err = sendto(sockfd, buff, bufferlength, 0, (struct sockaddr *)&to, length);
 	//handle sending errors
 	if (err < 0) {
 		printf("sendto-Problem");
 		exit(1);
 	}
+	printf("Sent %d bytes", err);
 
 
 
@@ -89,7 +92,7 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 
-	printf("Got an ACK! %s Port: %d: %s", inet_ntoa(from.sin_addr), htons(from.sin_port), buff);
+	printf("Got an ACK! %s Port: %d\n", inet_ntoa(from.sin_addr), htons(from.sin_port));
 
 	
 	
@@ -108,8 +111,9 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
 
     unsigned short i,j;
     unsigned short buffersize;
+    unsigned long readfilelength;
 
-    buffersize = 7 + nlength;
+    buffersize = 8 + nlength;
 
     
     printf("initialising buffer\n");
@@ -118,7 +122,7 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
 
     printf("Write header & length\n");
     //TYPE-ID
-    buffer[0] = (char) HEADER_T;
+    buffer[0] = (char) HEADER_T-128;
     buffer[1] = (char) (nlength & 0xff)-128;
     buffer[2] = (char) ((nlength >> 8) & 0xff)-128;
 
@@ -130,13 +134,37 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
     
 
     printf("write filelength\n");
-
+    //   printf("I is %d\n", i);
     for(j = 0; j < 4; j++)
     {
 	buffer[++i] = (char) ( (filelength >> (j*8) ) & 0xff )- 128;
     }
-  
-    printf("Done.");
+
+/*
+    printf("Testing file length parsing...\n");
+    readfilelength = 0;
+    i-=4;
+
+    for(j = i; j < i+4; j++)
+    {
+	printf("Buffer[%d]==%d\n",j,buffer[j]);
+	}
+
+    readfilelength = 0;
+
+    for(j = 0; j < 4; j++)
+    {
+	readfilelength = readfilelength | ( ( buffer[++i]+128)<<(j*8));
+	//printf("Buffer[%d]==%d\n",i,buffer[i]);
+	
+	//printf("readfilelength = %lu\n", readfilelength);
+    }
+
+    printf("file length is %lu\n", readfilelength);
+*/
+
+    
+    printf("Done.\n");
   
 
 }
