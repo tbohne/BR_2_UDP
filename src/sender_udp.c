@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+
 int main (int argc, char *argv[]) {
 	
 	int sockfd, err;
@@ -34,30 +35,36 @@ int main (int argc, char *argv[]) {
 	// Clearing
 	bzero(buff, 256);
 
+
+	//CREATE TARGET ADDRESS
 	// Assign Protocol Family
 	to.sin_family = AF_INET;
-
 	// Assign Port
 	to.sin_port = htons(atoi(argv[2]));
-
 	// Length of the Address Structure
 	length = sizeof(struct sockaddr_in);
-
 	// Address of the Receiver (Dotted to Network)
 	to.sin_addr.s_addr = inet_addr(argv[1]);
 
 
+	//dummy message
 	printf("enter something:");
 	// Reads a line from the specified stream and stores it into the string pointed to by buff.
 	fgets(buff, 256, stdin);
 
-	err = sendto(sockfd, buff, strlen(buff), 0, (struct sockaddr *)&to, length);
 
+	//send
+	err = sendto(sockfd, buff, strlen(buff), 0, (struct sockaddr *)&to, length);
+	//handle sending errors
 	if (err < 0) {
 		printf("sendto-Problem");
 		exit(1);
 	}
 
+
+
+
+	//await ok-response
 	err = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&from, &length);
 
 	if (err < 0) {
