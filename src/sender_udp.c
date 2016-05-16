@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>  //for file stats
+#include <unistd.h>    //for checking file access
+#include <libgen.h>    //for getting file name
 
 
 #include "Aufgabe2.h"
@@ -19,26 +22,95 @@ int main (int argc, char *argv[]) {
 	int sockfd, err;
 	socklen_t length;
 	struct sockaddr_in to, from;
-	//char buff[BUFFERSIZE];
+	char buff[BUFFERSIZE];
 	unsigned short nlength;
 	char *name;
 	unsigned long filelength;
-	size_t bufferlength;
-	char* buff;
+	size_t bufferlength;     //length of buffer that will be used for sending
+	size_t readbytes;        //number of bytes read by fread
+	int fd;                  //file descriptor for getting length
+	FILE* file;              //file stream
+	struct stat filebuf;     //file stats
+	unsigned long seqNr;     //number of package to be sent
+	
+	//char* buff;
 
-
-	//fill dummy values
-	name = "Es war einmal mitten im Winter, und die Schneeflocken fielen wie Federn vom Himmel herab. Da saß eine Königin an einem Fenster, das einen Rahmen von schwarzem Ebenholz hatte, und nähte.";
-	nlength = strlen(name);
-	filelength = 128;
+	/****** CHECK INPUT ********/
 
 	
+	//check for right number of arguments
 	if (argc != 4) {
 		printf("Illegal Arguments: [RECEIVER_ADDRESS] [RECEIVER_PORT] [FILE PATH]");
 		exit(1);
 	}
 
-	// GENERATE SOCKET
+	//check if file exists and can be read
+	if( access(argv[3], R_OK) == -1 )
+	{
+	    if( access(argv[3], F_OK) )
+	    {
+		printf("File does not exist");
+	    }
+	    else
+	    {
+		printf("No Read permission on file");
+	    }
+	    return 1;
+	}
+
+
+	/*******  OPEN FILE OPERATIONS *******/
+
+
+	//Open file, handle errors
+	file = fopen(argv[3], "r");
+        
+	if(!file)
+	{
+	    printf("Illegal File");
+	    return 1;
+	}
+
+
+	//Get file descriptor
+	fd = fileno(file);
+	if(fd == 0)
+	{
+	    printf("File reading error");
+	    return 1;
+	}
+
+	//Get file stats
+	if(fstat(fd, &filebuf) != 0)
+	{
+	    printf("File statistic read error");
+	    return 1;
+	}
+
+
+
+
+	/**** READ FILE STATS ****/
+	//get length
+	filelength = filebuf.st_size;
+
+	//get file name without path
+	name = basename(argv[3]);
+
+	nlength = strlen(name);
+		
+
+
+
+	
+        
+
+
+
+
+
+	
+	/******** SOCKET CREATION ***********/
 	// AF_INET --> Protocol Family
 	// SOCK_DGRAM --> Socket Type (UDP)
 	// 0 --> Protocol Field of the IP-Header (0, TCP and UDP gets entered automatically)
@@ -50,10 +122,10 @@ int main (int argc, char *argv[]) {
 	}
 
 	// Clearing
-	//bzero(buff, BUFFERSIZE);
+	bzero(buff, BUFFERSIZE);
 	bufferlength = nlength + 8;
 
-	buff = calloc(bufferlength, 1);
+//	buff = calloc(bufferlength, 1);
 	
 	//CREATE TARGET ADDRESS
 	// Assign Protocol Family
@@ -67,8 +139,12 @@ int main (int argc, char *argv[]) {
 	
 
 	
+
+
+
+	/********* HEADER SENDING *********/
 	prepareHeader(buff, nlength, name, filelength);
-	printf("Length of name +7 = %d\nbuffersize: %zu\n", nlength+7, strlen(buff));
+	printf("Length of name = %d\nbuffersize = %zu\nfilesize = %lu\n", nlength, strlen(buff), filelength);
 	
 	printf("Standby for sending..");
 	
@@ -79,10 +155,26 @@ int main (int argc, char *argv[]) {
 		printf("sendto-Problem");
 		exit(1);
 	}
-	printf("Sent %d bytes", err);
+	printf("Sent %d bytes\n", err);
 
 
 
+
+
+	/******* FILE TRANSFER ********/
+	/*seqNr = 0;
+	do {
+	    readbytes = fread(buff, BUFFERSIZE, 1, file);
+	    /*
+	       if(readbytes == 0)
+	    {
+		printf("File empty");
+		
+		}
+	    printf("Sending %d bytes");
+	}while(readbytes == BUFFERSIZE);*/
+
+	
 
 	//await ok-response
 	err = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&from, &length);
@@ -96,22 +188,21 @@ int main (int argc, char *argv[]) {
 
 	
 	
-	// Close Socket*/
+	// Close Socket
 	close(sockfd);
-	free(buff);
+	//free(buff);
+	fclose(file);
 	
 	return 0;
 }
 
-
-
+	    
 
 void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned long filelength)
 {
 
     unsigned short i,j;
     unsigned short buffersize;
-    unsigned long readfilelength;
 
     buffersize = 8 + nlength;
 
@@ -134,34 +225,12 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
     
 
     printf("write filelength\n");
-    //   printf("I is %d\n", i);
     for(j = 0; j < 4; j++)
     {
 	buffer[++i] = (char) ( (filelength >> (j*8) ) & 0xff )- 128;
     }
 
-/*
-    printf("Testing file length parsing...\n");
-    readfilelength = 0;
-    i-=4;
 
-    for(j = i; j < i+4; j++)
-    {
-	printf("Buffer[%d]==%d\n",j,buffer[j]);
-	}
-
-    readfilelength = 0;
-
-    for(j = 0; j < 4; j++)
-    {
-	readfilelength = readfilelength | ( ( buffer[++i]+128)<<(j*8));
-	//printf("Buffer[%d]==%d\n",i,buffer[i]);
-	
-	//printf("readfilelength = %lu\n", readfilelength);
-    }
-
-    printf("file length is %lu\n", readfilelength);
-*/
 
     
     printf("Done.\n");
