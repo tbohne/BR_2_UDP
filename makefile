@@ -5,6 +5,7 @@ ADDRESS = 127.0.0.1
 FILEPATH = files/testfile
 SRCPATH = src/
 BINPATH = bin/
+VALGPARAMS = --leak-check=full --track-origins=yes
 
 build: $(BINPATH)sender_udp $(BINPATH)receiver_udp
 
@@ -29,8 +30,8 @@ testsend: build
 	$(BINPATH)sender_udp $(ADDRESS) $(PORT) $(FILEPATH)
 
 valgrec: build
-	valgrind $(BINPATH)receiver_udp $(PORT)
+	valgrind $(VALGPARAMS) $(BINPATH)receiver_udp $(PORT)
 
 valgsend: build
-	valgrind $(BINPATH)sender_udp $(ADDRESS) $(PORT) $(FILEPATH)
+	valgrind $(VALGPARAMS) $(BINPATH)sender_udp $(ADDRESS) $(PORT) $(FILEPATH)
 

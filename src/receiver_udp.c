@@ -32,7 +32,7 @@ int main (int argc, char *argv[]) {
 	unsigned long filelength;  //length of file in bytes
 	unsigned long receivedBytes; //Number of received data files (excluding header of each package!)
 
-	struct stat folderstat;  // to check if received folder exists
+	struct stat folderstat = {0};  // to check if received folder exists
 	char filepath[MAXPATHLENGTH];  //path to file in received folder with file name
 	FILE* file;  //File stream to write file into
 	unsigned long seqNr;  //number of packet received in data transmission
@@ -111,8 +111,8 @@ int main (int argc, char *argv[]) {
 	printf("Received %d bytes\n",err);
 
 
-	filename = 0;  //otherwhise might be used uninitialised
-	filelength = 0;
+	//bzero(filename, filenamelength);  //otherwhise might be used uninitialised
+	//filelength = 0;
 	parseHeader(buff, &filenamelength, &filename, &filelength);
 
 	
@@ -187,12 +187,12 @@ int main (int argc, char *argv[]) {
 	seqNr = 0;
 	receivedBytes = 0;
 
-	filebuffer = calloc(BUFFERSIZE - 5, 1); //get space for filebuffer
+	/*filebuffer = calloc(BUFFERSIZE - 5, 1); //get space for filebuffer
 	if (filebuffer == NULL)
 	{
 	    printf("Could not allocate memory for filebuffer");
 	    return 1;
-	}
+	    }*/
 
 
 	
@@ -256,7 +256,7 @@ int main (int argc, char *argv[]) {
 	close(sockfd);
 	fclose(file);
 	free (filename);
-
+	
 	return 0;
 }
 
@@ -275,7 +275,7 @@ void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname,
     //printf("name length is %d\n", *readnlength);
 
    
-    readname = calloc(*readnlength,1);
+    readname = calloc(*readnlength+1,1);
 
     
     //read name:
