@@ -7,9 +7,12 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 
 #include "receiver_udp.h"
 #include "Aufgabe2.h"
+
+
 
 int main (int argc, char *argv[]) {
 
@@ -18,18 +21,42 @@ int main (int argc, char *argv[]) {
 	int err;     //return value of bind for error handling
 	struct sockaddr_in to, from;  //addresses for receiving and transmitting
 	socklen_t fromlen; //length of source address struct
+	short state; //state of receiving: 1: expecting Header, 2: expecting Data or end of data, 3: expecting SHA. Just for double-checking.
 
 	unsigned char headerstate;
 
 	char buff[1024];  //mesage buffer
+	
+	unsigned short filenamelength;  //length of file name
+	char *filename;  //name of file
+	unsigned long filelength;  //length of file in bytes
 
+	struct stat folderstat;  // to check if received folder exists
+	char filepath[MAXPATHLENGTH];  //path to file in received folder with file name
+	FILE* file;
+	
+
+
+
+
+	
+        /****** CHECK INPUT ********/
+
+	
 	//error handling: argument parsing
 	if (argc != 2) {
 		printf("Illegal Arguments: [RECEIVER_PORT]");
 		exit(1);
 	}
 	
-	// GENERATE SOCKET
+	
+
+
+
+
+	
+	/******** SOCKET CREATION ***********/
+	
 	// AF_INET --> Protocol Family
 	// SOCK_DGRAM --> Socket Type (UDP)
 	// 0 --> Protocol Field of the IP-Header (0, TCP and UDP gets entered automatically)
@@ -63,7 +90,10 @@ int main (int argc, char *argv[]) {
 	// Length of the Source Address Structure
 	fromlen = sizeof(struct sockaddr_in);
 
-        
+
+	/****** RECEIVE HEAD *******/
+
+	
 
 	err = recvfrom(sockfd, buff, 1024, 0, (struct sockaddr *)&from, &fromlen);
 
@@ -74,7 +104,11 @@ int main (int argc, char *argv[]) {
 	    exit(1);
 	}
 	printf("Received %d bytes\n",err);
-	parseHeader(buff);
+
+
+	filename = 0;  //otherwhise might be used uninitialised
+	filelength = 0;
+	parseHeader(buff, &filenamelength, &filename, &filelength);
 
 	
 	if (err < 0) {
@@ -83,6 +117,84 @@ int main (int argc, char *argv[]) {
 	}
 
 	printf("Received %d bytes from host %s port %d\n", length, inet_ntoa(from.sin_addr), htons(from.sin_port));
+
+
+	printf("Parsed file length: %lu\nParsed filename: %s\n", filelength, filename);
+
+
+
+	
+
+	/*******  OPEN FILE OPERATIONS *******/
+
+
+	printf("Preparing file for writing...\n");
+
+	if(strlen(filename) + 10 > MAXPATHLENGTH)
+	{
+	    printf("Can not create path: file name too long");
+	    return 1;
+	}
+	  
+
+	
+	//get file path
+	snprintf(filepath, MAXPATHLENGTH, "%s%s", "received/", filename);
+        
+
+
+	
+	
+
+	//check if folder exists, create if it doesn't
+	
+	if (!( stat("/received", &folderstat) == 0) && (S_ISDIR(folderstat.st_mode)) ){
+	    if (0!= mkdir("/received", 0700))
+	    {
+		printf("error when creating directory\n");
+		perror("mkdir");
+		return 1;
+	    }
+	}
+
+
+
+	
+	
+	//Open file, handle errors
+        printf("Open file path %s\n", filepath);
+	file = fopen(filepath, "w");
+
+
+        
+	if(!file)
+	{
+	    printf("Illegal File");
+	    return 1;
+	}
+/*
+	
+	//Get file descriptor
+	fd = fileno(file);
+	if(fd == 0)
+	{
+	    printf("File reading error");
+	    return 1;
+	}
+
+	//Get file stats
+	if(fstat(fd, &filebuf) != 0)
+	{
+	    printf("File statistic read error");
+	    return 1;
+	}
+
+
+*/
+
+
+	/******* OTHER STUFF ******/
+	
 
 	err = sendto(sockfd, "Message received\n", 17, 0, (struct sockaddr *)&from,fromlen);
 	if (err < 0) {
@@ -93,43 +205,47 @@ int main (int argc, char *argv[]) {
 		
 
 	// Close Socket
-	close(sockfd);	
+	close(sockfd);
+	fclose(file);
+	free (filename);
 
 	return 0;
 }
 
-void parseHeader(char* buffer)
+
+
+
+void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname, unsigned long *readfilelength)
 {
     unsigned short i,j;
-
-
-    unsigned short readnlength;
+    
     char *readname;
-    unsigned long readfilelength;
 
-    printf("Reading...\n");
-    
-    readnlength = ( buffer[1]+128 ) | ( (buffer[2]+128) << 8 );
-    printf("name length is %d\n", readnlength);
+    //printf("Reading...\n");
 
-    readname = calloc(readnlength,1);
+    *readnlength = (unsigned short) (  ( buffer[1]+128 ) | ( (buffer[2]+128) << 8 ) );
+    //printf("name length is %d\n", *readnlength);
+
+   
+    readname = calloc(*readnlength,1);
+
     
-    for(i = 3; i<readnlength+3; i++)
+    //read name:
+    for(i = 3; i<*readnlength+3; i++)
     {
-
 	readname[i-3] = buffer[i];
     }
 
 
+
     
-    for(j = 0; j < readnlength; j++)
+    /*for(j = 0; j < *readnlength; j++)
     {
 	putchar(readname[j]);
-    }
-    printf("\n");
+	}*/
+    //printf("\n");
 
-    free(readname);
-
+    *readrealname = readname;
     
     /*for(j = i; j < i+4; j++)
     {
@@ -138,15 +254,15 @@ void parseHeader(char* buffer)
 
     //printf("I is %d\n", i);
 
-    readfilelength = 0;
+    *readfilelength = 0;
     for(j = 0; j < 4; j++)
     {
-	readfilelength = readfilelength | ( ( buffer[++i]+128)<<(j*8));
+	*readfilelength = *readfilelength | ( ( buffer[++i]+128)<<(j*8));
 	//printf("Buffer[%d]==%d\n",i,buffer[i]);
-	//printf("readfilelength = %lu\n", readfilelength);
+	//printf("readfilelength = %lu\n", *readfilelength);
     }
 
-    printf("file length is %lu\n", readfilelength);
+    //printf("file length is %lu\n", *readfilelength);
 
 
 

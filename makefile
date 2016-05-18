@@ -1,4 +1,4 @@
-CFLAGS = -Wall -std=gnu99 -pedantic
+CFLAGS = -Wall -std=c99 -pedantic -D_POSIX_SOURCE -g
 PORT = 25565
 ADDRESS = 127.0.0.1
 #192.168.239.128

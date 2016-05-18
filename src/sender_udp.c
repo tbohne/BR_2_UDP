@@ -32,6 +32,9 @@ int main (int argc, char *argv[]) {
 	FILE* file;              //file stream
 	struct stat filebuf;     //file stats
 	unsigned long seqNr;     //number of package to be sent
+	char* filedatabuff[BUFFERSIZE-5];      //contains data of file
+	int i;
+	
 	
 	//char* buff;
 
@@ -147,6 +150,8 @@ int main (int argc, char *argv[]) {
 	printf("Length of name = %d\nbuffersize = %zu\nfilesize = %lu\n", nlength, strlen(buff), filelength);
 	
 	printf("Standby for sending..");
+
+
 	
 	//send
 	err = sendto(sockfd, buff, bufferlength, 0, (struct sockaddr *)&to, length);
@@ -162,23 +167,43 @@ int main (int argc, char *argv[]) {
 
 
 	/******* FILE TRANSFER ********/
-	/*seqNr = 0;
+	seqNr = 0;
+
 	do {
-	    readbytes = fread(buff, BUFFERSIZE, 1, file);
-	    /*
+	    buff[0] = DATA_T;
+	    for(i = 0; i < 4; i++)
+	    {
+		
+		buff[i] = (char) ( (seqNr >> ( (i-1)*8) ) & 0xff )- 128;
+	    }
+
+	    readbytes = fread(filedatabuff, BUFFERSIZE-5, 1, file);
+	    
+	    err = sendto(sockfd, buff, readbytes+5, 0, (struct sockaddr *)&to, length);
+	
+
+/*
 	       if(readbytes == 0)
 	    {
 		printf("File empty");
 		
-		}
-	    printf("Sending %d bytes");
-	}while(readbytes == BUFFERSIZE);*/
-
+		}*/
+	    printf("Sent package %lu containing %zu bytes", seqNr, readbytes);
+	}while(readbytes == BUFFERSIZE);
 	
 
+
+
+
+
+	/******** ALL THE OTHER STUFF *******/
+
+	    
 	//await ok-response
 	err = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&from, &length);
 
+	
+	
 	if (err < 0) {
 		printf("recvfrom-Problem");
 		exit(1);
@@ -230,7 +255,7 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
 	buffer[++i] = (char) ( (filelength >> (j*8) ) & 0xff )- 128;
     }
 
-
+    
 
     
     printf("Done.\n");
