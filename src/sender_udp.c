@@ -10,7 +10,7 @@
 #include <sys/stat.h>  //for file stats
 #include <unistd.h>    //for checking file access
 #include <libgen.h>    //for getting file name
-
+#include <openssl/sha.h>  //for sha1
 
 #include "Aufgabe2.h"
 #include "sender_udp.h"
@@ -34,7 +34,8 @@ int main (int argc, char *argv[]) {
 	unsigned long seqNr;     //number of package to be sent
 	char filedatabuff[BUFFERSIZE-5];      //contains data of file
 	int i;  //magic number that makes the program work.
-	
+	char *shaBuffer;
+	char *shaPtr;
         
 
 	/****** CHECK INPUT ********/
@@ -169,7 +170,18 @@ int main (int argc, char *argv[]) {
 
 	//reset sequence number
 	seqNr = 0;
-	//bzero(buff, BUFFERSIZE);
+
+
+	//prepare Sha
+	shaBuffer = calloc(filelength,1);
+	if(!shaBuffer)
+	{
+	    printf("Could not allocate shaBuffer\n");
+	    return 1;
+	}
+	shaPtr = shaBuffer;
+
+	
 
 	printf("Commencing file transmission\n");
 	do {
@@ -196,6 +208,7 @@ int main (int argc, char *argv[]) {
 		for(i = 5; i<readbytes+5; i++)
 		{
 		    buff[i] = filedatabuff[i-5];
+		    *(shaPtr++)=filedatabuff[i-5];
 		}
 
 		//Send data.
@@ -214,6 +227,11 @@ int main (int argc, char *argv[]) {
 	printf("File transmission complete\n");
 
 
+	/******* SHA-1 ********/
+
+
+	getSha1(shaBuffer, filelength);
+	
 
 	/******** ALL THE OTHER STUFF *******/
 
@@ -236,6 +254,8 @@ int main (int argc, char *argv[]) {
 	close(sockfd);
 	//free(buff);
 	fclose(file);
+
+	free(shaBuffer);
 	
 	return 0;
 }
@@ -279,5 +299,34 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
     
     printf("Done.\n");
   
+
+}
+
+
+
+
+void getSha1(char *buff, int bufferlength)
+{
+    int i = 0;
+    unsigned char temp[SHA_DIGEST_LENGTH];
+    char shaBuf[SHA_DIGEST_LENGTH*2];
+ 
+    bzero(shaBuf, SHA_DIGEST_LENGTH*2);
+    bzero(temp, SHA_DIGEST_LENGTH);
+
+    
+    //memset(buf, 0x0, SHA_DIGEST_LENGTH*2);
+    //memset(temp, 0x0, SHA_DIGEST_LENGTH);
+ 
+    SHA1((unsigned char *)buff, bufferlength, temp);
+ 
+    for (i=0; i < SHA_DIGEST_LENGTH; i++) {
+        sprintf((char*)&(shaBuf[i*2]), "%02x", temp[i]);
+    }
+ 
+    printf("SHA1 of buffer is %s\n", shaBuf);
+    
+
+
 
 }

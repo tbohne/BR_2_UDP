@@ -24,14 +24,14 @@ static const char* const sender_sha1 	= "\x1b[34mSender SHA1: %s \x1b[0m\n";
 static const char* const filename_str 	= "\x1b[33mFilename: %s \x1b[0m\n";
 static const char* const filesize_str 	= "\x1b[33mFilesize: %d bytes\x1b[0m\n";
 
-static char* create_sha1_string(unsigned char* sha1){
+/*static char* create_sha1_string(unsigned char* sha1){
   char* result = (char*) malloc(41);
   int i;
   for(i = 0; i < 20; i++){
     sprintf(result+2*i,"%02x",*(sha1+i));
   }
   return result;
-}
+  }*/
 
 
 /****** OWN DEFINITIONS START HERE *******/
