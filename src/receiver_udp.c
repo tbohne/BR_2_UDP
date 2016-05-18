@@ -30,7 +30,7 @@ int main (int argc, char *argv[]) {
 	unsigned short filenamelength;  //length of file name
 	char *filename;  //name of file
 	unsigned long filelength;  //length of file in bytes
-	unsigned long receivedBytes; //Number of received data files
+	unsigned long receivedBytes; //Number of received data files (excluding header of each package!)
 
 	struct stat folderstat;  // to check if received folder exists
 	char filepath[MAXPATHLENGTH];  //path to file in received folder with file name
@@ -135,6 +135,7 @@ int main (int argc, char *argv[]) {
 
 	printf("Preparing file for writing...\n");
 
+	//filename should not exceed limits. If it is too long there could be bufferoverflow, security issues, ...
 	if(strlen(filename) + 10 > MAXPATHLENGTH)
 	{
 	    printf("Can not create path: file name too long");
@@ -169,40 +170,24 @@ int main (int argc, char *argv[]) {
 	//Open file, handle errors
         printf("Open file path %s\n", filepath);
 	file = fopen(filepath, "w");
-
-
-        
 	if(!file)
 	{
 	    printf("Illegal File");
 	    return 1;
 	}
-/*
+
+
 	
-	//Get file descriptor
-	fd = fileno(file);
-	if(fd == 0)
-	{
-	    printf("File reading error");
-	    return 1;
-	}
-
-	//Get file stats
-	if(fstat(fd, &filebuf) != 0)
-	{
-	    printf("File statistic read error");
-	    return 1;
-	}
-
-
-*/
 
 	/******* READ FILE TRANSMISSION *********/
+
+	//progress state
 	state = DATA_T;
-	
+
 	seqNr = 0;
 	receivedBytes = 0;
-	filebuffer = calloc(BUFFERSIZE - 5, 1);
+
+	filebuffer = calloc(BUFFERSIZE - 5, 1); //get space for filebuffer
 	if (filebuffer == NULL)
 	{
 	    printf("Could not allocate memory for filebuffer");
@@ -210,10 +195,11 @@ int main (int argc, char *argv[]) {
 	}
 
 
-
+	
 	printf("Standing by for incoming file...\n");
 	
-	
+
+	//start receiving and interpreting transmission
 	do {
 	    err = recvfrom(sockfd, buff, BUFFERSIZE, 0, (struct sockaddr *)&from, &fromlen);
 
@@ -234,15 +220,22 @@ int main (int argc, char *argv[]) {
 		return 1;
 	    }
 
+	    //set filebuffer to where the real buffer starts
 	    filebuffer = buff+5;
 
-	    
-	    printf("Received %d bytes in packet %lu, writing now\n",err-5, seqNr);
-	    fwrite(filebuffer, 1, err-5, file);
-	    seqNr++;
-	    receivedBytes += err - 5;
 
-	}while(receivedBytes != filelength);
+	    
+	    printf("Received %d payload bytes in packet %lu, writing now\n",err-5, seqNr);
+
+	    //write current package to hard drive.
+	    //Note: Either we write often here or we allocate the complete filesize as memory and write to hard drive once finished.
+	    //I decided to to the former. It causes latency but is better for large files.
+	    fwrite(filebuffer, 1, err-5, file);
+
+	    seqNr++;
+	    receivedBytes += err - 5;  //received bytes must only store the number of bytes belonging to the data, not the head of the package
+
+	}while(receivedBytes != filelength); //once we have received everything we're done
 
 	printf("File written on drive.\n");
 	

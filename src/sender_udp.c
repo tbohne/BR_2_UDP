@@ -33,10 +33,9 @@ int main (int argc, char *argv[]) {
 	struct stat filebuf;     //file stats
 	unsigned long seqNr;     //number of package to be sent
 	char filedatabuff[BUFFERSIZE-5];      //contains data of file
-	int i;
+	int i;  //magic number that makes the program work.
 	
-	
-	//char* buff;
+        
 
 	/****** CHECK INPUT ********/
 
@@ -167,12 +166,16 @@ int main (int argc, char *argv[]) {
 
 
 	/******* FILE TRANSFER ********/
+
+	//reset sequence number
 	seqNr = 0;
-	bzero(buff, BUFFERSIZE);
+	//bzero(buff, BUFFERSIZE);
 
 	printf("Commencing file transmission\n");
 	do {
-	    buff[0] = DATA_T-128;
+	    buff[0] = DATA_T-128;  //Yes, we're sending data!
+
+	    //put sequence number into next 4 bytes of buffer
 	    for(i = 1; i < 5; i++)
 	    {
 		
@@ -181,29 +184,31 @@ int main (int argc, char *argv[]) {
 
 	    seqNr++;
 	    
+
+	    //check how many files could be read. Is less than BUFFERSIZE-5 when eof is reached
 	    readbytes = fread(filedatabuff, 1, BUFFERSIZE-5, file);
 
 
+	    //transmit if we have any bytes to transmit
 	    if(readbytes != 0)
 	    {
-		//snprintf(buff, BUFFERSIZE, "%s%s", buff, filedatabuff);
+		//put filebuffer into real buffer. Can't concat because buff is not really a string and can have null anywhere...
 		for(i = 5; i<readbytes+5; i++)
 		{
 		    buff[i] = filedatabuff[i-5];
 		}
-		
-		err = sendto(sockfd, buff, readbytes+5, 0, (struct sockaddr *)&to, length);
-	    
 
-/*
-	       if(readbytes == 0)
-	    {
-		printf("File empty");
-		
-		}*/
+		//Send data.
+		err = sendto(sockfd, buff, readbytes+5, 0, (struct sockaddr *)&to, length);
+		if( err != readbytes+5 )
+		{
+		    printf("Sending data package %lu failed",seqNr);
+		    return 1;
+		}
+
 		printf("Sent package %lu containing %zu bytes\n", seqNr, readbytes);
 	    }
-	}while(readbytes == BUFFERSIZE-5);
+	}while(readbytes == BUFFERSIZE-5);  //once readbytes is less than BUFFERSIZE-5 eof was reached and we're finished.
 	
 
 	printf("File transmission complete\n");

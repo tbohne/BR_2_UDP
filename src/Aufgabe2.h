@@ -35,7 +35,7 @@ static char* create_sha1_string(unsigned char* sha1){
 
 
 /****** OWN DEFINITIONS START HERE *******/
-#define BUFFERSIZE 255
+#define BUFFERSIZE 512
 #define MAXPATHLENGTH 80
 
 #endif
