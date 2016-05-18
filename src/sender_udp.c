@@ -32,7 +32,7 @@ int main (int argc, char *argv[]) {
 	FILE* file;              //file stream
 	struct stat filebuf;     //file stats
 	unsigned long seqNr;     //number of package to be sent
-	char* filedatabuff[BUFFERSIZE-5];      //contains data of file
+	char filedatabuff[BUFFERSIZE-5];      //contains data of file
 	int i;
 	
 	
@@ -168,7 +168,9 @@ int main (int argc, char *argv[]) {
 
 	/******* FILE TRANSFER ********/
 	seqNr = 0;
+	bzero(buff, BUFFERSIZE);
 
+	printf("Commencing file transmission\n");
 	do {
 	    buff[0] = DATA_T;
 	    for(i = 0; i < 4; i++)
@@ -177,10 +179,17 @@ int main (int argc, char *argv[]) {
 		buff[i] = (char) ( (seqNr >> ( (i-1)*8) ) & 0xff )- 128;
 	    }
 
-	    readbytes = fread(filedatabuff, BUFFERSIZE-5, 1, file);
+	    seqNr++;
 	    
-	    err = sendto(sockfd, buff, readbytes+5, 0, (struct sockaddr *)&to, length);
-	
+	    readbytes = fread(filedatabuff, 1, BUFFERSIZE-5, file);
+
+
+	    if(readbytes != 0)
+	    {
+		snprintf(buff, BUFFERSIZE, "%s%s", buff, filedatabuff);
+	    
+		err = sendto(sockfd, buff, readbytes+5, 0, (struct sockaddr *)&to, length);
+	    
 
 /*
 	       if(readbytes == 0)
@@ -188,11 +197,12 @@ int main (int argc, char *argv[]) {
 		printf("File empty");
 		
 		}*/
-	    printf("Sent package %lu containing %zu bytes", seqNr, readbytes);
-	}while(readbytes == BUFFERSIZE);
+		printf("Sent package %lu containing %zu bytes\n", seqNr, readbytes);
+	    }
+	}while(readbytes == BUFFERSIZE-5);
 	
 
-
+	printf("File transmission complete\n");
 
 
 
