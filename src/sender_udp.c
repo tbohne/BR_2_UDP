@@ -172,8 +172,8 @@ int main (int argc, char *argv[]) {
 
 	printf("Commencing file transmission\n");
 	do {
-	    buff[0] = DATA_T;
-	    for(i = 0; i < 4; i++)
+	    buff[0] = DATA_T-128;
+	    for(i = 1; i < 5; i++)
 	    {
 		
 		buff[i] = (char) ( (seqNr >> ( (i-1)*8) ) & 0xff )- 128;
@@ -186,8 +186,12 @@ int main (int argc, char *argv[]) {
 
 	    if(readbytes != 0)
 	    {
-		snprintf(buff, BUFFERSIZE, "%s%s", buff, filedatabuff);
-	    
+		//snprintf(buff, BUFFERSIZE, "%s%s", buff, filedatabuff);
+		for(i = 5; i<readbytes+5; i++)
+		{
+		    buff[i] = filedatabuff[i-5];
+		}
+		
 		err = sendto(sockfd, buff, readbytes+5, 0, (struct sockaddr *)&to, length);
 	    
 

@@ -21,19 +21,24 @@ int main (int argc, char *argv[]) {
 	int err;     //return value of bind for error handling
 	struct sockaddr_in to, from;  //addresses for receiving and transmitting
 	socklen_t fromlen; //length of source address struct
-	short state; //state of receiving: 1: expecting Header, 2: expecting Data or end of data, 3: expecting SHA. Just for double-checking.
+	unsigned char state; //state of receiving: 1: expecting Header, 2: expecting Data or end of data, 3: expecting SHA. Just for double-checking.
 
 	unsigned char headerstate;
 
-	char buff[1024];  //mesage buffer
+	char buff[BUFFERSIZE];  //mesage buffer
 	
 	unsigned short filenamelength;  //length of file name
 	char *filename;  //name of file
 	unsigned long filelength;  //length of file in bytes
+	unsigned long receivedBytes; //Number of received data files
 
 	struct stat folderstat;  // to check if received folder exists
 	char filepath[MAXPATHLENGTH];  //path to file in received folder with file name
-	FILE* file;
+	FILE* file;  //File stream to write file into
+	unsigned long seqNr;  //number of packet received in data transmission
+	unsigned long readSeqNr;  //sequence number transmitted by sender
+	char *filebuffer; //holds the file content to write on file
+	
 	
 
 
@@ -92,13 +97,13 @@ int main (int argc, char *argv[]) {
 
 
 	/****** RECEIVE HEAD *******/
-
+	state = HEADER_T;
 	
 
-	err = recvfrom(sockfd, buff, 1024, 0, (struct sockaddr *)&from, &fromlen);
+	err = recvfrom(sockfd, buff, BUFFERSIZE, 0, (struct sockaddr *)&from, &fromlen);
 
 	headerstate = (unsigned char) buff[0]+128;
-	if(headerstate != HEADER_T)
+	if(headerstate != state)
 	{
 	    printf("Illegal state: state was %d\n",headerstate);
 	    exit(1);
@@ -192,7 +197,57 @@ int main (int argc, char *argv[]) {
 
 */
 
+	/******* READ FILE TRANSMISSION *********/
+	state = DATA_T;
+	
+	seqNr = 0;
+	receivedBytes = 0;
+	filebuffer = calloc(BUFFERSIZE - 5, 1);
+	if (filebuffer == NULL)
+	{
+	    printf("Could not allocate memory for filebuffer");
+	    return 1;
+	}
 
+
+
+	printf("Standing by for incoming file...\n");
+	
+	
+	do {
+	    err = recvfrom(sockfd, buff, BUFFERSIZE, 0, (struct sockaddr *)&from, &fromlen);
+
+
+	    //read header state
+            headerstate = (unsigned char) buff[0]+128;
+	    if(headerstate != state)
+	    {
+		printf("Illegal state: state was %d\n",headerstate);
+		exit(1);
+	    }
+
+            //read sequence number
+	    readSeqNr =  (unsigned long) (  ( buff[1]+128 ) | ( (buff[2]+128) << 8 ) | ( (buff[3]+128) << 16 ) | ( (buff[4]+128) << 24 ) );
+	    if(seqNr != readSeqNr)
+	    {
+		printf("Packets out of order\n");
+		return 1;
+	    }
+
+	    filebuffer = buff+5;
+
+	    
+	    printf("Received %d bytes in packet %lu, writing now\n",err-5, seqNr);
+	    fwrite(filebuffer, 1, err-5, file);
+	    seqNr++;
+	    receivedBytes += err - 5;
+
+	}while(receivedBytes != filelength);
+
+	printf("File written on drive.\n");
+	
+
+	
 	/******* OTHER STUFF ******/
 	
 

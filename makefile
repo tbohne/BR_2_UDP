@@ -20,7 +20,7 @@ clearconsole:
 	reset
 
 clean:
-	rm bin/*
+	rm bin/* received/*
 
 testrec: build
 	$(BINPATH)receiver_udp $(PORT)
