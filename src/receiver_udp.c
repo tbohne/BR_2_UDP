@@ -43,7 +43,8 @@ int main (int argc, char *argv[]) {
 	char *shaBuffer;  //holds the complete file payload accross all data packages
 	char *shaPtr;  //for convenience, points to the next character to be written in shaBuffer
 	char *shaVal;  //for the actual sha1-value
-	char *recShaVal;
+	char *recShaVal;  //received Sha1-Val
+	char sha1_CMP;  //result of comparing sha-values according to task
 	
 	int i;
 
@@ -246,16 +247,18 @@ int main (int argc, char *argv[]) {
 	    
 	    printf("Received %d payload bytes in packet %lu, writing now\n",err-5, seqNr);
 
-	    //write current package to hard drive.
-	    //Note: Either we write often here or we allocate the complete filesize as memory and write to hard drive once finished.
-	    //I decided to to the former. It causes latency but is better for large files.
-	    fwrite(filebuffer, 1, err-5, file);
+	   	    
 
 	    seqNr++;
 	    receivedBytes += err - 5;  //received bytes must only store the number of bytes belonging to the data, not the head of the package
 
 	}while(receivedBytes != filelength); //once we have received everything we're done
 
+
+
+	//write current package to hard drive.
+	fwrite(shaBuffer, 1, filelength, file);
+	
 	printf("File written on drive.\n");
 	
 
@@ -283,6 +286,7 @@ int main (int argc, char *argv[]) {
 	    exit(1);
 	}
 
+	
 	recShaVal = calloc(SHA_DIGEST_LENGTH*2+1,1);
 	if(!recShaVal)
 	{
@@ -290,7 +294,8 @@ int main (int argc, char *argv[]) {
 	    return 1;
 	}
 
-	    
+
+	//parse Sha-value
 	for(i = 1; i < SHA_DIGEST_LENGTH*2+1; i++)
 	{
 	    recShaVal[i-1] = buff[i];
@@ -308,24 +313,42 @@ int main (int argc, char *argv[]) {
 	//printf("Calculated Sha-1 is %s\n", shaVal);
 
 
+	//compare results
 	if(strcmp(shaVal, recShaVal) != 0 )
 	{
 	    printf(SHA1_ERROR);
+	    sha1_CMP = SHA1_CMP_ERROR;
+	    
 	}
 	else
 	{
 	    printf("Sha values equal.\n");
+	    sha1_CMP = SHA1_CMP_OK;
 	}
-	
+
+
+	/******* SEND SHA COMPARE RESULT ******/
+
+	//prepare id
+	buff[0] = SHA1_CMP_T-128;
+
+	//prepare compare result
+	buff[1] = sha1_CMP;
+
+
+	//and away!
+	err = sendto(sockfd, buff, 2, 0, (struct sockaddr *)&from,fromlen);
+	if (err < 0) {
+	    printf("sendto-Problem");
+	    exit(1);
+	}
+
+
 	
 	/******* OTHER STUFF ******/
 	
 
-	err = sendto(sockfd, "Message received\n", 17, 0, (struct sockaddr *)&from,fromlen);
-	if (err < 0) {
-	  printf("sendto-Problem");
-	  exit(1);
-	}
+	
 		
 		
 

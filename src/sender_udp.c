@@ -256,7 +256,6 @@ int main (int argc, char *argv[]) {
 	    buff[i] = shaVal[i-1];
 	}
 
-
 	//transmit sha-1
 	
 	err = sendto(sockfd, buff, SHA_DIGEST_LENGTH*2+1, 0, (struct sockaddr *)&to, length);
@@ -270,23 +269,43 @@ int main (int argc, char *argv[]) {
 
 	printf("Sha-1 is transmitted.\n");
 
-	
+
+
+	/****** RECEIVE SHA COMPARE RESULT ******/
+
+
+	//receive sha comp result
+	err = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&from, &length);
+	if (err != 2)
+	{
+	    printf("recvfrom-Problem");
+	    exit(1);
+	}
+
+	//check header
+	if(buff[0]+128 != SHA1_CMP_T)
+	{
+	    printf("Error when receiving Sha Compare result\n");
+	}
+
+	//check actual compare result
+	if( buff[1]  == SHA1_CMP_ERROR)
+	{
+
+	    printf(SHA1_ERROR);
+	}
+	else
+	{
+	    printf(SHA1_OK);
+	}
 	
 
 	/******** ALL THE OTHER STUFF *******/
 
 	    
 	//await ok-response
-	err = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&from, &length);
-
 	
-	
-	if (err < 0) {
-		printf("recvfrom-Problem");
-		exit(1);
-	}
-
-	printf("Got an ACK! %s Port: %d\n", inet_ntoa(from.sin_addr), htons(from.sin_port));
+	//printf("Got an ACK! %s Port: %d\n", inet_ntoa(from.sin_addr), htons(from.sin_port));
 
 	
 	
