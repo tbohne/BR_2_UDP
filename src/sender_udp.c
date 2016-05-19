@@ -124,7 +124,6 @@ int main (int argc, char *argv[]) {
 	}
 
 	// Clearing
-	printf("%d\n", nlength);
 	bzero(buff, BUFFERSIZE);
 
 
@@ -132,7 +131,7 @@ int main (int argc, char *argv[]) {
 	if ((bufferlength = nlength + 8) > BUFFERSIZE) {
 		printf("Exceeded maximum package size.");
 		exit(1);
-	}
+	}	
 	
 	//	buff = calloc(bufferlength, 1);
 	

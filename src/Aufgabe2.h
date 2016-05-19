@@ -35,6 +35,7 @@ static char* create_sha1_string(unsigned char* sha1){
 
 
 /****** OWN DEFINITIONS START HERE *******/
+// MTU: PPPoE <= 1492 Bytes (-20 for IP-Header - 8 for UDP-Header)
 #define BUFFERSIZE 1464
 #define MAXPATHLENGTH 80
 
