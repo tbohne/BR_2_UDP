@@ -13,10 +13,9 @@
 #include "Aufgabe2.h"
 
 
-
 int main (int argc, char *argv[]) {
 
-        int sockfd;  //socket file descriptor
+    int sockfd;  //socket file descriptor
 	int length;  //length of address (of to)
 	int err;     //return value of bind for error handling
 	struct sockaddr_in to, from;  //addresses for receiving and transmitting
@@ -40,25 +39,13 @@ int main (int argc, char *argv[]) {
 	char *filebuffer; //holds the file content to write on file
 	
 	
-
-
-
-
-	
-        /****** CHECK INPUT ********/
-
+    /****** CHECK INPUT ********/
 	
 	//error handling: argument parsing
 	if (argc != 2) {
 		printf("Illegal Arguments: [RECEIVER_PORT]");
 		exit(1);
 	}
-	
-	
-
-
-
-
 	
 	/******** SOCKET CREATION ***********/
 	
@@ -125,9 +112,6 @@ int main (int argc, char *argv[]) {
 
 
 	printf("Parsed file length: %lu\nParsed filename: %s\n", filelength, filename);
-
-
-
 	
 
 	/*******  OPEN FILE OPERATIONS *******/
@@ -142,15 +126,9 @@ int main (int argc, char *argv[]) {
 	    return 1;
 	}
 	  
-
-	
 	//get file path
 	snprintf(filepath, MAXPATHLENGTH, "%s%s", "received/", filename);
         
-
-
-	
-	
 
 	//check if folder exists, create if it doesn't
 	
@@ -163,21 +141,15 @@ int main (int argc, char *argv[]) {
 	    }
 	}
 
-
-
-	
 	
 	//Open file, handle errors
-        printf("Open file path %s\n", filepath);
+    printf("Open file path %s\n", filepath);
 	file = fopen(filepath, "w");
 	if(!file)
 	{
 	    printf("Illegal File");
 	    return 1;
 	}
-
-
-	
 
 	/******* READ FILE TRANSMISSION *********/
 
@@ -205,7 +177,7 @@ int main (int argc, char *argv[]) {
 
 
 	    //read header state
-            headerstate = (unsigned char) buff[0]+128;
+        headerstate = (unsigned char) buff[0]+128;
 	    if(headerstate != state)
 	    {
 		printf("Illegal state: state was %d\n",headerstate);
@@ -249,8 +221,6 @@ int main (int argc, char *argv[]) {
 	  printf("sendto-Problem");
 	  exit(1);
 	}
-		
-		
 
 	// Close Socket
 	close(sockfd);
@@ -261,13 +231,13 @@ int main (int argc, char *argv[]) {
 }
 
 
-
-
 void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname, unsigned long *readfilelength)
 {
+
+	char *readname;
+	
     unsigned short i,j;
     
-    char *readname;
 
     //printf("Reading...\n");
 
@@ -311,7 +281,4 @@ void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname,
     }
 
     //printf("file length is %lu\n", *readfilelength);
-
-
-
 }

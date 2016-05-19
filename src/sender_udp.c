@@ -89,9 +89,6 @@ int main (int argc, char *argv[]) {
 	    return 1;
 	}
 
-
-
-
 	/**** READ FILE STATS ****/
 	//get length
 	filelength = filebuf.st_size;
@@ -101,16 +98,6 @@ int main (int argc, char *argv[]) {
 
 	nlength = strlen(name);
 		
-
-
-
-	
-        
-
-
-
-
-
 	
 	/******** SOCKET CREATION ***********/
 	// AF_INET --> Protocol Family
@@ -146,17 +133,11 @@ int main (int argc, char *argv[]) {
 	to.sin_addr.s_addr = inet_addr(argv[1]);
 	
 
-	
-
-
-
 	/********* HEADER SENDING *********/
 	prepareHeader(buff, nlength, name, filelength);
 	printf("Length of name = %d\nbuffersize = %zu\nfilesize = %lu\n", nlength, strlen(buff), filelength);
 	
 	printf("Standby for sending..");
-
-
 	
 	//send
 	err = sendto(sockfd, buff, bufferlength, 0, (struct sockaddr *)&to, length);
@@ -166,9 +147,6 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	printf("Sent %d bytes\n", err);
-
-
-
 
 
 	/******* FILE TRANSFER ********/
@@ -240,7 +218,7 @@ int main (int argc, char *argv[]) {
 	
 	// Close Socket
 	close(sockfd);
-	//free(buff);
+	// free(buff);
 	fclose(file);
 	
 	return 0;
@@ -279,11 +257,7 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
     {
 	buffer[++i] = (char) ( (filelength >> (j*8) ) & 0xff )- 128;
     }
-
-    
-
-    
+   
     printf("Done.\n");
   
-
 }
