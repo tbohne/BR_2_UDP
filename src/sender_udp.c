@@ -35,7 +35,7 @@ int main (int argc, char *argv[]) {
 	char filedatabuff[BUFFERSIZE-5];      //contains data of file
 	int i;  //magic number that makes the program work.
 	char *shaBuffer;
-	char *shaPtr;
+	char *shaVal;
         
 
 	/****** CHECK INPUT ********/
@@ -179,7 +179,6 @@ int main (int argc, char *argv[]) {
 	    printf("Could not allocate shaBuffer\n");
 	    return 1;
 	}
-	shaPtr = shaBuffer;
 
 	
 
@@ -208,7 +207,7 @@ int main (int argc, char *argv[]) {
 		for(i = 5; i<readbytes+5; i++)
 		{
 		    buff[i] = filedatabuff[i-5];
-		    *(shaPtr++)=filedatabuff[i-5];
+		    shaBuffer[i-5]=filedatabuff[i-5];
 		}
 
 		//Send data.
@@ -227,10 +226,49 @@ int main (int argc, char *argv[]) {
 	printf("File transmission complete\n");
 
 
+
+
+
+
+
+
+
+	
 	/******* SHA-1 ********/
 
+	printf("Calculating Sha1...\n");
 
-	getSha1(shaBuffer, filelength);
+	//calculate sha-1
+	shaVal = getSha1(shaBuffer, filelength);
+
+	//printf("SHA1 of buffer is %s\n", shaVal);
+
+
+	
+
+	//prepare transmitting of sha-1
+	buff[0] = SHA1_T;
+
+	for(i = 1; i<SHA_DIGEST_LENGTH+1; i++)
+	{
+	    buff[i] = shaVal[i-1];
+	}
+
+
+	//transmit sha-1
+	
+	err = sendto(sockfd, buff, SHA_DIGEST_LENGTH+1, 0, (struct sockaddr *)&to, length);
+	if( err != SHA_DIGEST_LENGTH+1 )
+	{
+	    printf("Error when sending Sha-1\n");
+	    return 1;
+	}
+
+	
+
+	printf("Sha-1 is transmitted.\n");
+
+	
 	
 
 	/******** ALL THE OTHER STUFF *******/
@@ -254,8 +292,11 @@ int main (int argc, char *argv[]) {
 	close(sockfd);
 	//free(buff);
 	fclose(file);
+	
 
+	
 	free(shaBuffer);
+	free(shaVal);
 	
 	return 0;
 }
@@ -305,11 +346,14 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
 
 
 
-void getSha1(char *buff, int bufferlength)
+char* getSha1(char *buff, int bufferlength)
 {
     int i = 0;
     unsigned char temp[SHA_DIGEST_LENGTH];
-    char shaBuf[SHA_DIGEST_LENGTH*2];
+    char *shaBuf;
+    char *sha1;
+
+    shaBuf = calloc(SHA_DIGEST_LENGTH*2+1,1);
  
     bzero(shaBuf, SHA_DIGEST_LENGTH*2);
     bzero(temp, SHA_DIGEST_LENGTH);
@@ -317,16 +361,18 @@ void getSha1(char *buff, int bufferlength)
     
     //memset(buf, 0x0, SHA_DIGEST_LENGTH*2);
     //memset(temp, 0x0, SHA_DIGEST_LENGTH);
- 
-    SHA1((unsigned char *)buff, bufferlength, temp);
+
+    sha1 = buff;
+    
+    SHA1((unsigned char *)sha1, bufferlength, temp);
  
     for (i=0; i < SHA_DIGEST_LENGTH; i++) {
         sprintf((char*)&(shaBuf[i*2]), "%02x", temp[i]);
     }
  
-    printf("SHA1 of buffer is %s\n", shaBuf);
     
-
+    
+    return shaBuf;
 
 
 }
