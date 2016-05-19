@@ -124,10 +124,17 @@ int main (int argc, char *argv[]) {
 	}
 
 	// Clearing
+	printf("%d\n", nlength);
 	bzero(buff, BUFFERSIZE);
-	bufferlength = nlength + 8;
 
-//	buff = calloc(bufferlength, 1);
+
+	// To satisfy the MTU of a PPPoE-Connection (max package size)
+	if ((bufferlength = nlength + 8) > BUFFERSIZE) {
+		printf("Exceeded maximum package size.");
+		exit(1);
+	}
+	
+	//	buff = calloc(bufferlength, 1);
 	
 	//CREATE TARGET ADDRESS
 	// Assign Protocol Family
