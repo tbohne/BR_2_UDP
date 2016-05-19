@@ -7,7 +7,7 @@ SRCPATH = src/
 BINPATH = bin/
 VALGPARAMS = --leak-check=full --track-origins=yes
 
-build: $(BINPATH)sender_udp $(BINPATH)receiver_udp
+build: received $(BINPATH)sender_udp $(BINPATH)receiver_udp
 
 debug: clearconsole build
 
@@ -16,6 +16,9 @@ $(BINPATH)receiver_udp: $(SRCPATH)receiver_udp.c $(SRCPATH)receiver_udp.h
 
 $(BINPATH)sender_udp: $(SRCPATH)sender_udp.c $(SRCPATH)sender_udp.h
 	gcc $(CFLAGS) -o $(BINPATH)sender_udp $(SRCPATH)sender_udp.c	
+
+received:
+	mkdir received
 
 clearconsole:
 	reset
