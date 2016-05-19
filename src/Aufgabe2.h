@@ -35,6 +35,8 @@ static const char* const filesize_str 	= "\x1b[33mFilesize: %d bytes\x1b[0m\n";
 
 
 /****** OWN DEFINITIONS START HERE *******/
+
+// MTU: PPPoE <= 1492 Bytes (-20 for IP-Header, -8 for UDP-Header)
 #define BUFFERSIZE 512
 #define MAXPATHLENGTH 80
 

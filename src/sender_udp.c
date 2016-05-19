@@ -104,15 +104,6 @@ int main (int argc, char *argv[]) {
 	nlength = strlen(name);
 		
 
-
-
-	
-        
-
-
-
-
-
 	
 	/******** SOCKET CREATION ***********/
 	// AF_INET --> Protocol Family
@@ -127,7 +118,12 @@ int main (int argc, char *argv[]) {
 
 	// Clearing
 	bzero(buff, BUFFERSIZE);
-	bufferlength = nlength + 8;
+
+	// To satisfy the MTU of a PPPoE-Connection (max package size)
+	if ((bufferlength = nlength + 8) > BUFFERSIZE) {
+		printf("Exceeded maximum package size.");
+		exit(1);
+	}
 
 //	buff = calloc(bufferlength, 1);
 	
@@ -162,9 +158,6 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	printf("Sent %d bytes\n", err);
-
-
-
 
 
 	/******* FILE TRANSFER ********/
@@ -228,14 +221,6 @@ int main (int argc, char *argv[]) {
 	printf("File transmission complete\n");
 
 
-
-
-
-
-
-
-
-	
 	/******* SHA-1 ********/
 
 	printf("Calculating Sha1...\n");
@@ -244,8 +229,6 @@ int main (int argc, char *argv[]) {
 	shaVal = getSha1(shaBuffer, filelength);
 
 	//printf("SHA1 of buffer is %s\n", shaVal);
-	
-
 	
 
 	//prepare transmitting of sha-1
