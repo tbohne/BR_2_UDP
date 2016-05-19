@@ -11,10 +11,10 @@
 #include <unistd.h>    //for checking file access
 #include <libgen.h>    //for getting file name
 #include <openssl/sha.h>  //for sha1
+#include <sys/time.h>
 
 #include "Aufgabe2.h"
 #include "sender_udp.h"
-
 
 
 int main (int argc, char *argv[]) {
@@ -37,11 +37,12 @@ int main (int argc, char *argv[]) {
 	char *shaBuffer;  //holds the complete file across all data packages
 	char *shaVal;   //holds the actual sha1-value
 	char *shaPtr;
+
+	struct timeval timeout;
         
 
 	/****** CHECK INPUT ********/
 
-	
 	//check for right number of arguments
 	if (argc != 4) {
 		printf("Illegal Arguments: [RECEIVER_ADDRESS] [RECEIVER_PORT] [FILE PATH]");
@@ -92,8 +93,6 @@ int main (int argc, char *argv[]) {
 	}
 
 
-
-
 	/**** READ FILE STATS ****/
 	//get length
 	filelength = filebuf.st_size;
@@ -103,7 +102,6 @@ int main (int argc, char *argv[]) {
 
 	nlength = strlen(name);
 		
-
 	
 	/******** SOCKET CREATION ***********/
 	// AF_INET --> Protocol Family
@@ -125,7 +123,7 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 
-//	buff = calloc(bufferlength, 1);
+	//	buff = calloc(bufferlength, 1);
 	
 	//CREATE TARGET ADDRESS
 	// Assign Protocol Family
@@ -138,16 +136,11 @@ int main (int argc, char *argv[]) {
 	to.sin_addr.s_addr = inet_addr(argv[1]);
 	
 
-	
-
-
-
 	/********* HEADER SENDING *********/
 	prepareHeader(buff, nlength, name, filelength);
 	printf("Length of name = %d\nbuffersize = %zu\nfilesize = %lu\n", nlength, strlen(buff), filelength);
 	
 	printf("Standby for sending..");
-
 
 	
 	//send
@@ -176,7 +169,6 @@ int main (int argc, char *argv[]) {
 	shaPtr = shaBuffer;
 
 	
-
 	printf("Commencing file transmission\n");
 	do {
 	    buff[0] = DATA_T-128;  //Yes, we're sending data!
@@ -206,6 +198,7 @@ int main (int argc, char *argv[]) {
 		}
 
 		//Send data.
+
 		err = sendto(sockfd, buff, readbytes+5, 0, (struct sockaddr *)&to, length);
 		if( err != readbytes+5 )
 		{
@@ -248,20 +241,27 @@ int main (int argc, char *argv[]) {
 	    return 1;
 	}
 
-	
-
 	printf("Sha-1 is transmitted.\n");
 
 
-
 	/****** RECEIVE SHA COMPARE RESULT ******/
+
+
+	/************* NEW ******************/
+
+	timeout.tv_sec = WAIT;
+	timeout.tv_usec = 0;
+	// Set socket options for a possible timeout
+	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+	/***********************************/
 
 
 	//receive sha comp result
 	err = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&from, &length);
 	if (err != 2)
 	{
-	    printf("recvfrom-Problem");
+	    printf(timeout_error);
 	    exit(1);
 	}
 
@@ -339,15 +339,9 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
 	buffer[++i] = (char) ( (filelength >> (j*8) ) & 0xff )- 128;
     }
 
-    
-
-    
     printf("Done.\n");
-  
 
 }
-
-
 
 /*
 char* getSha1(char *buff, int bufferlength)

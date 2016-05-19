@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <openssl/sha.h>  //for sha1
+#include <sys/time.h>
 
 #include "receiver_udp.h"
 #include "Aufgabe2.h"
@@ -17,7 +18,7 @@
 
 int main (int argc, char *argv[]) {
 
-        int sockfd;  //socket file descriptor
+    int sockfd;  //socket file descriptor
 	int length;  //length of address (of to)
 	int err;     //return value of bind for error handling
 	struct sockaddr_in to, from;  //addresses for receiving and transmitting
@@ -48,10 +49,12 @@ int main (int argc, char *argv[]) {
 	
 	int i;
 
+	struct timeval timeout;
+
 
 
 	
-        /****** CHECK INPUT ********/
+    /****** CHECK INPUT ********/
 
 	
 	//error handling: argument parsing
@@ -60,11 +63,6 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	
-	
-
-
-
-
 	
 	/******** SOCKET CREATION ***********/
 	
@@ -106,7 +104,20 @@ int main (int argc, char *argv[]) {
 	state = HEADER_T;
 	
 
-	err = recvfrom(sockfd, buff, BUFFERSIZE, 0, (struct sockaddr *)&from, &fromlen);
+	/************* NEW ******************/
+
+	timeout.tv_sec = WAIT;
+	timeout.tv_usec = 0;
+	// Set socket options for a possible timeout
+	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+	/***********************************/
+
+
+	if ((err = recvfrom(sockfd, buff, BUFFERSIZE, 0, (struct sockaddr *)&from, &fromlen)) < 0) {
+		printf(timeout_error);
+		exit(1);
+	}
 
 	headerstate = (unsigned char) buff[0]+128;
 	if(headerstate != state)
@@ -121,20 +132,12 @@ int main (int argc, char *argv[]) {
 	//filelength = 0;
 	parseHeader(buff, &filenamelength, &filename, &filelength);
 
-	
-	if (err < 0) {
-	  printf("recvfrom-Problem");
-	  exit(1);
-	}
 
 	printf("Received %d bytes from host %s port %d\n", length, inet_ntoa(from.sin_addr), htons(from.sin_port));
 
 
 	printf("Parsed file length: %lu\nParsed filename: %s\n", filelength, filename);
 
-
-
-	
 
 	/*******  OPEN FILE OPERATIONS *******/
 
@@ -158,15 +161,9 @@ int main (int argc, char *argv[]) {
 	    return 1;
 	}
 	  
-
-	
 	//get file path
 	snprintf(filepath, MAXPATHLENGTH, "%s%s", "received/", filename);
         
-
-
-	
-	
 
 	//check if folder exists, create if it doesn't
 	
@@ -178,10 +175,6 @@ int main (int argc, char *argv[]) {
 		return 1;
 	    }
 	}
-
-
-
-	
 	
 	//Open file, handle errors
         printf("Open file path %s\n", filepath);
@@ -192,8 +185,6 @@ int main (int argc, char *argv[]) {
 	    return 1;
 	}
 
-
-	
 
 	/******* READ FILE TRANSMISSION *********/
 
@@ -209,7 +200,6 @@ int main (int argc, char *argv[]) {
 	    printf("Could not allocate memory for filebuffer");
 	    return 1;
 	    }*/
-
 
 	
 	printf("Standing by for incoming file...\n");
@@ -261,10 +251,6 @@ int main (int argc, char *argv[]) {
 	
 	printf("File written on drive.\n");
 	
-
-
-
-
 
 	/******* RECEIVE SHA-1 ********/
         
@@ -344,13 +330,8 @@ int main (int argc, char *argv[]) {
 	}
 
 
-	
 	/******* OTHER STUFF ******/
-	
 
-	
-		
-		
 
 	// Close Socket
 	close(sockfd);
@@ -362,8 +343,6 @@ int main (int argc, char *argv[]) {
 	
 	return 0;
 }
-
-
 
 
 void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname, unsigned long *readfilelength)

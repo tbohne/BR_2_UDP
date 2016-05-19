@@ -35,7 +35,7 @@ static const char* const filesize_str 	= "\x1b[33mFilesize: %d bytes\x1b[0m\n";
 
 
 /****** OWN DEFINITIONS START HERE *******/
-
+#define WAIT 10
 // MTU: PPPoE <= 1492 Bytes (-20 for IP-Header, -8 for UDP-Header)
 #define BUFFERSIZE 512
 #define MAXPATHLENGTH 80
@@ -61,12 +61,8 @@ char* getSha1(char *buff, int bufferlength)
     for (i=0; i < SHA_DIGEST_LENGTH; i++) {
         sprintf((char*)&(shaBuf[i*2]), "%02x", temp[i]);
     }
- 
-    
-    
+
     return shaBuf;
-
-
 }
 
 #endif
