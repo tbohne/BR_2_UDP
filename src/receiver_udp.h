@@ -3,6 +3,7 @@
 void parseHeader(char* buffer, unsigned short *readnlength, char **readname, unsigned long *readfilelength);
 
 
+//char *getSha1(char *buff, int bufferlength);
 
 #endif
 

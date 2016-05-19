@@ -38,4 +38,33 @@ static const char* const filesize_str 	= "\x1b[33mFilesize: %d bytes\x1b[0m\n";
 #define BUFFERSIZE 512
 #define MAXPATHLENGTH 80
 
+
+char* getSha1(char *buff, int bufferlength)
+{
+    int i = 0;
+    unsigned char temp[SHA_DIGEST_LENGTH];
+    char *shaBuf;
+    char *sha1;
+
+    shaBuf = calloc(SHA_DIGEST_LENGTH*2+1,1);
+ 
+    bzero(shaBuf, SHA_DIGEST_LENGTH*2);
+    bzero(temp, SHA_DIGEST_LENGTH);
+
+
+    sha1 = buff;
+    
+    SHA1((unsigned char *)sha1, bufferlength, temp);
+ 
+    for (i=0; i < SHA_DIGEST_LENGTH; i++) {
+        sprintf((char*)&(shaBuf[i*2]), "%02x", temp[i]);
+    }
+ 
+    
+    
+    return shaBuf;
+
+
+}
+
 #endif

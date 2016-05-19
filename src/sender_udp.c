@@ -34,8 +34,9 @@ int main (int argc, char *argv[]) {
 	unsigned long seqNr;     //number of package to be sent
 	char filedatabuff[BUFFERSIZE-5];      //contains data of file
 	int i;  //magic number that makes the program work.
-	char *shaBuffer;
-	char *shaVal;
+	char *shaBuffer;  //holds the complete file across all data packages
+	char *shaVal;   //holds the actual sha1-value
+	char *shaPtr;
         
 
 	/****** CHECK INPUT ********/
@@ -179,6 +180,7 @@ int main (int argc, char *argv[]) {
 	    printf("Could not allocate shaBuffer\n");
 	    return 1;
 	}
+	shaPtr = shaBuffer;
 
 	
 
@@ -207,7 +209,7 @@ int main (int argc, char *argv[]) {
 		for(i = 5; i<readbytes+5; i++)
 		{
 		    buff[i] = filedatabuff[i-5];
-		    shaBuffer[i-5]=filedatabuff[i-5];
+		    *(shaPtr++)=filedatabuff[i-5];
 		}
 
 		//Send data.
@@ -242,14 +244,14 @@ int main (int argc, char *argv[]) {
 	shaVal = getSha1(shaBuffer, filelength);
 
 	//printf("SHA1 of buffer is %s\n", shaVal);
-
+	
 
 	
 
 	//prepare transmitting of sha-1
-	buff[0] = SHA1_T;
+	buff[0] = SHA1_T-128;
 
-	for(i = 1; i<SHA_DIGEST_LENGTH+1; i++)
+	for(i = 1; i<SHA_DIGEST_LENGTH*2+1; i++)
 	{
 	    buff[i] = shaVal[i-1];
 	}
@@ -257,8 +259,8 @@ int main (int argc, char *argv[]) {
 
 	//transmit sha-1
 	
-	err = sendto(sockfd, buff, SHA_DIGEST_LENGTH+1, 0, (struct sockaddr *)&to, length);
-	if( err != SHA_DIGEST_LENGTH+1 )
+	err = sendto(sockfd, buff, SHA_DIGEST_LENGTH*2+1, 0, (struct sockaddr *)&to, length);
+	if( err != SHA_DIGEST_LENGTH*2+1 )
 	{
 	    printf("Error when sending Sha-1\n");
 	    return 1;
@@ -345,7 +347,7 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
 
 
 
-
+/*
 char* getSha1(char *buff, int bufferlength)
 {
     int i = 0;
@@ -355,7 +357,7 @@ char* getSha1(char *buff, int bufferlength)
 
     shaBuf = calloc(SHA_DIGEST_LENGTH*2+1,1);
  
-    bzero(shaBuf, SHA_DIGEST_LENGTH*2);
+    //bzero(shaBuf, SHA_DIGEST_LENGTH*2);
     bzero(temp, SHA_DIGEST_LENGTH);
 
     
@@ -370,9 +372,11 @@ char* getSha1(char *buff, int bufferlength)
         sprintf((char*)&(shaBuf[i*2]), "%02x", temp[i]);
     }
  
-    
+    printf("SHA1 of buffer is %s\n", shaBuf);
+	
     
     return shaBuf;
 
 
 }
+*/

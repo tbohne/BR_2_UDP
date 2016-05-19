@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <openssl/sha.h>  //for sha1
 
 #include "receiver_udp.h"
 #include "Aufgabe2.h"
@@ -38,9 +39,13 @@ int main (int argc, char *argv[]) {
 	unsigned long seqNr;  //number of packet received in data transmission
 	unsigned long readSeqNr;  //sequence number transmitted by sender
 	char *filebuffer; //holds the file content to write on file
-	
-	
 
+	char *shaBuffer;  //holds the complete file payload accross all data packages
+	char *shaPtr;  //for convenience, points to the next character to be written in shaBuffer
+	char *shaVal;  //for the actual sha1-value
+	char *recShaVal;
+	
+	int i;
 
 
 
@@ -133,6 +138,16 @@ int main (int argc, char *argv[]) {
 	/*******  OPEN FILE OPERATIONS *******/
 
 
+	//prepare Sha
+	shaBuffer = calloc(filelength,1);
+	if(!shaBuffer)
+	{
+	    printf("Could not allocate shaBuffer\n");
+	    return 1;
+	}
+	shaPtr = shaBuffer;
+
+	
 	printf("Preparing file for writing...\n");
 
 	//filename should not exceed limits. If it is too long there could be bufferoverflow, security issues, ...
@@ -222,7 +237,11 @@ int main (int argc, char *argv[]) {
 
 	    //set filebuffer to where the real buffer starts
 	    filebuffer = buff+5;
-
+	    
+	    for(i = 0; i<err-5; i++)
+	    {
+		*(shaPtr++) = filebuffer[i];
+	    }
 
 	    
 	    printf("Received %d payload bytes in packet %lu, writing now\n",err-5, seqNr);
@@ -240,6 +259,64 @@ int main (int argc, char *argv[]) {
 	printf("File written on drive.\n");
 	
 
+
+
+
+
+	/******* RECEIVE SHA-1 ********/
+        
+	//receive sha-1
+        err = recvfrom(sockfd, buff, BUFFERSIZE, 0, (struct sockaddr *)&from, &fromlen);
+
+	if(err != SHA_DIGEST_LENGTH*2+1 )
+	{
+	    printf("Error when receiving Sha-1\n");
+	    return 1;
+	}
+
+
+	//receive header
+	headerstate = (unsigned char) buff[0]+128;
+	if(headerstate != SHA1_T)
+	{
+	    printf("Illegal state: state was %d\n",headerstate);
+	    exit(1);
+	}
+
+	recShaVal = calloc(SHA_DIGEST_LENGTH*2+1,1);
+	if(!recShaVal)
+	{
+	    printf("Could not allocate recShaVal space\n");
+	    return 1;
+	}
+
+	    
+	for(i = 1; i < SHA_DIGEST_LENGTH*2+1; i++)
+	{
+	    recShaVal[i-1] = buff[i];
+	}
+	recShaVal[SHA_DIGEST_LENGTH*2] = '\0';
+
+	//printf("Received Sha-1 is %s\n", recShaVal);
+
+
+
+        //calculate sha over received file
+
+	shaVal = getSha1(shaBuffer, filelength);
+
+	//printf("Calculated Sha-1 is %s\n", shaVal);
+
+
+	if(strcmp(shaVal, recShaVal) != 0 )
+	{
+	    printf(SHA1_ERROR);
+	}
+	else
+	{
+	    printf("Sha values equal.\n");
+	}
+	
 	
 	/******* OTHER STUFF ******/
 	
@@ -255,7 +332,10 @@ int main (int argc, char *argv[]) {
 	// Close Socket
 	close(sockfd);
 	fclose(file);
-	free (filename);
+	free(filename);
+	free(shaBuffer);
+	free(recShaVal);
+	free(shaVal);
 	
 	return 0;
 }
@@ -315,3 +395,36 @@ void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname,
 
 
 }
+
+
+/*
+char* getSha1(char *buff, int bufferlength)
+{
+    int i = 0;
+    unsigned char temp[SHA_DIGEST_LENGTH];
+    char *shaBuf;
+    char *sha1;
+
+    shaBuf = calloc(SHA_DIGEST_LENGTH*2+1,1);
+ 
+    bzero(shaBuf, SHA_DIGEST_LENGTH*2);
+    bzero(temp, SHA_DIGEST_LENGTH);
+
+    
+    //memset(buf, 0x0, SHA_DIGEST_LENGTH*2);
+    //memset(temp, 0x0, SHA_DIGEST_LENGTH);
+
+    sha1 = buff;
+    
+    SHA1((unsigned char *)sha1, bufferlength, temp);
+ 
+    for (i=0; i < SHA_DIGEST_LENGTH; i++) {
+        sprintf((char*)&(shaBuf[i*2]), "%02x", temp[i]);
+    }
+ 
+    
+    
+    return shaBuf;
+
+
+    }*/
