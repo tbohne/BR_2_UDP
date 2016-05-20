@@ -237,11 +237,11 @@ int main (int argc, char *argv[]) {
 	err = sendto(sockfd, buff, SHA_DIGEST_LENGTH*2+1, 0, (struct sockaddr *)&to, length);
 	if( err != SHA_DIGEST_LENGTH*2+1 )
 	{
-	    printf("Error when sending Sha-1\n");
+	    printf(SHA1_ERROR);
 	    return 1;
 	}
 
-	printf("Sha-1 is transmitted.\n");
+	printf(SHA1_OK);
 
 
 	/****** RECEIVE SHA COMPARE RESULT ******/
@@ -254,9 +254,6 @@ int main (int argc, char *argv[]) {
 	// Set socket options for a possible timeout
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
-	/***********************************/
-
-
 	//receive sha comp result
 	err = recvfrom(sockfd, buff, sizeof(buff), 0, (struct sockaddr *)&from, &length);
 	if (err != 2)
@@ -264,6 +261,8 @@ int main (int argc, char *argv[]) {
 	    printf(timeout_error);
 	    exit(1);
 	}
+
+	/***********************************/
 
 	//check header
 	if(buff[0]+128 != SHA1_CMP_T)

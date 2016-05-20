@@ -52,8 +52,6 @@ int main (int argc, char *argv[]) {
 	struct timeval timeout;
 
 
-
-	
     /****** CHECK INPUT ********/
 
 	
@@ -108,16 +106,18 @@ int main (int argc, char *argv[]) {
 
 	timeout.tv_sec = WAIT;
 	timeout.tv_usec = 0;
+
 	// Set socket options for a possible timeout
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-	/***********************************/
-
-
+	
 	if ((err = recvfrom(sockfd, buff, BUFFERSIZE, 0, (struct sockaddr *)&from, &fromlen)) < 0) {
 		printf(timeout_error);
 		exit(1);
 	}
+	
+	/***********************************/
+	
+
 
 	headerstate = (unsigned char) buff[0]+128;
 	if(headerstate != state)
@@ -259,7 +259,7 @@ int main (int argc, char *argv[]) {
 
 	if(err != SHA_DIGEST_LENGTH*2+1 )
 	{
-	    printf("Error when receiving Sha-1\n");
+	    printf(SHA1_ERROR);
 	    return 1;
 	}
 
@@ -308,7 +308,7 @@ int main (int argc, char *argv[]) {
 	}
 	else
 	{
-	    printf("Sha values equal.\n");
+	    printf(SHA1_OK);
 	    sha1_CMP = SHA1_CMP_OK;
 	}
 
