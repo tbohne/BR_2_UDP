@@ -31,7 +31,7 @@ int main (int argc, char *argv[]) {
 	
 	unsigned short filenamelength;  //length of file name
 	char *filename;  //name of file
-	unsigned long filelength;  //length of file in bytes
+	unsigned int filelength;  //length of file in bytes
 	unsigned long receivedBytes; //Number of received data files (excluding header of each package!)
 
 	struct stat folderstat = {0};  // to check if received folder exists
@@ -70,7 +70,7 @@ int main (int argc, char *argv[]) {
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (sockfd < 0) {
-		printf("Socket-Problem");
+		printf("Socket-Error");
 		exit(1);
 	}
 
@@ -90,7 +90,7 @@ int main (int argc, char *argv[]) {
 	err = bind(sockfd, (struct sockaddr *) &to, length);
 
 	if (err < 0) {
-		printf("Binding-Problem");
+		printf("Binding-Error");
 		exit(1);
 	}
 
@@ -122,11 +122,10 @@ int main (int argc, char *argv[]) {
 	headerstate = (unsigned char) buff[0]+128;
 	if(headerstate != state)
 	{
-	    printf("Illegal state: state was %d\n",headerstate);
+	    printf(packet_error);
 	    exit(1);
 	}
 	printf("Received %d bytes\n",err);
-
 
 	//bzero(filename, filenamelength);  //otherwhise might be used uninitialised
 	//filelength = 0;
@@ -136,11 +135,10 @@ int main (int argc, char *argv[]) {
 	printf("Received %d bytes from host %s port %d\n", length, inet_ntoa(from.sin_addr), htons(from.sin_port));
 
 
-	printf("Parsed file length: %lu\nParsed filename: %s\n", filelength, filename);
+	printf("Parsed file length: %d\nParsed filename: %s\n", filelength, filename);
 
 
 	/*******  OPEN FILE OPERATIONS *******/
-
 
 	//prepare Sha
 	shaBuffer = calloc(filelength,1);
@@ -214,7 +212,7 @@ int main (int argc, char *argv[]) {
             headerstate = (unsigned char) buff[0]+128;
 	    if(headerstate != state)
 	    {
-		printf("Illegal state: state was %d\n",headerstate);
+		printf(packet_error);
 		exit(1);
 	    }
 
@@ -222,7 +220,7 @@ int main (int argc, char *argv[]) {
 	    readSeqNr =  (unsigned long) (  ( buff[1]+128 ) | ( (buff[2]+128) << 8 ) | ( (buff[3]+128) << 16 ) | ( (buff[4]+128) << 24 ) );
 	    if(seqNr != readSeqNr)
 	    {
-		printf("Packets out of order\n");
+		printf(order_error);
 		return 1;
 	    }
 
@@ -234,10 +232,8 @@ int main (int argc, char *argv[]) {
 		*(shaPtr++) = filebuffer[i];
 	    }
 
-	    
-	    printf("Received %d payload bytes in packet %lu, writing now\n",err-5, seqNr);
 
-	   	    
+	    printf("Received %d payload bytes in packet %lu, writing now\n",err-5, seqNr);
 
 	    seqNr++;
 	    receivedBytes += err - 5;  //received bytes must only store the number of bytes belonging to the data, not the head of the package
@@ -268,7 +264,7 @@ int main (int argc, char *argv[]) {
 	headerstate = (unsigned char) buff[0]+128;
 	if(headerstate != SHA1_T)
 	{
-	    printf("Illegal state: state was %d\n",headerstate);
+	    printf(packet_error);
 	    exit(1);
 	}
 
@@ -290,14 +286,12 @@ int main (int argc, char *argv[]) {
 
 	//printf("Received Sha-1 is %s\n", recShaVal);
 
-
-
-        //calculate sha over received file
+    //calculate sha over received file
 
 	shaVal = getSha1(shaBuffer, filelength);
 
-	//printf("Calculated Sha-1 is %s\n", shaVal);
-
+	//printf("Calculated Sha-1 is %s\n", shaVal)
+	
 
 	//compare results
 	if(strcmp(shaVal, recShaVal) != 0 )
@@ -325,7 +319,7 @@ int main (int argc, char *argv[]) {
 	//and away!
 	err = sendto(sockfd, buff, 2, 0, (struct sockaddr *)&from,fromlen);
 	if (err < 0) {
-	    printf("sendto-Problem");
+	    printf("sendto-Error");
 	    exit(1);
 	}
 
@@ -345,7 +339,7 @@ int main (int argc, char *argv[]) {
 }
 
 
-void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname, unsigned long *readfilelength)
+void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname, unsigned int *readfilelength)
 {
     unsigned short i,j;
     
@@ -389,7 +383,7 @@ void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname,
     {
 	*readfilelength = *readfilelength | ( ( buffer[++i]+128)<<(j*8));
 	//printf("Buffer[%d]==%d\n",i,buffer[i]);
-	//printf("readfilelength = %lu\n", *readfilelength);
+	//printf("readfilelength = %d\n", *filelength);
     }
 
     //printf("file length is %lu\n", *readfilelength);

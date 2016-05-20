@@ -25,7 +25,7 @@ int main (int argc, char *argv[]) {
 	char buff[BUFFERSIZE];
 	unsigned short nlength;
 	char *name;
-	unsigned long filelength;
+	unsigned int filelength;
 	size_t bufferlength;     //length of buffer that will be used for sending
 	size_t readbytes;        //number of bytes read by fread
 	int fd;                  //file descriptor for getting length
@@ -100,8 +100,7 @@ int main (int argc, char *argv[]) {
 	//get file name without path
 	name = basename(argv[3]);
 
-	nlength = strlen(name);
-		
+	nlength = strlen(name);		
 	
 	/******** SOCKET CREATION ***********/
 	// AF_INET --> Protocol Family
@@ -110,7 +109,7 @@ int main (int argc, char *argv[]) {
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (sockfd < 0) {
-		printf("Socket-Problem");
+		printf("Socket-Error");
 		exit(1);
 	}
 
@@ -138,16 +137,15 @@ int main (int argc, char *argv[]) {
 
 	/********* HEADER SENDING *********/
 	prepareHeader(buff, nlength, name, filelength);
-	printf("Length of name = %d\nbuffersize = %zu\nfilesize = %lu\n", nlength, strlen(buff), filelength);
+	printf("Length of name = %d\nbuffersize = %zu\nfilesize = %d\n", nlength, strlen(buff), filelength);
 	
 	printf("Standby for sending..");
-
 	
 	//send
 	err = sendto(sockfd, buff, bufferlength, 0, (struct sockaddr *)&to, length);
 	//handle sending errors
 	if (err < 0) {
-		printf("sendto-Problem");
+		printf("sendto-Error");
 		exit(1);
 	}
 	printf("Sent %d bytes\n", err);
@@ -158,9 +156,8 @@ int main (int argc, char *argv[]) {
 	//reset sequence number
 	seqNr = 0;
 
-
 	//prepare Sha
-	shaBuffer = calloc(filelength,1);
+	shaBuffer = calloc((size_t)	filelength, 1);
 	if(!shaBuffer)
 	{
 	    printf("Could not allocate shaBuffer\n");
@@ -221,8 +218,7 @@ int main (int argc, char *argv[]) {
 	//calculate sha-1
 	shaVal = getSha1(shaBuffer, filelength);
 
-	//printf("SHA1 of buffer is %s\n", shaVal);
-	
+	//printf("SHA1 of buffer is %s\n", shaVal);	
 
 	//prepare transmitting of sha-1
 	buff[0] = SHA1_T-128;
@@ -267,7 +263,7 @@ int main (int argc, char *argv[]) {
 	//check header
 	if(buff[0]+128 != SHA1_CMP_T)
 	{
-	    printf("Error when receiving Sha Compare result\n");
+	    printf(SHA1_ERROR);
 	}
 
 	//check actual compare result
@@ -306,17 +302,17 @@ int main (int argc, char *argv[]) {
 
 	    
 
-void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned long filelength)
+void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned int filelength)
 {
 
     unsigned short i,j;
-    unsigned short buffersize;
+    //unsigned short buffersize;
 
-    buffersize = 8 + nlength;
+   	//buffersize = 1;
 
     
     printf("initialising buffer\n");
-    bzero(buffer, buffersize);
+    //bzero(buffer, buffersize);
     
 
     printf("Write header & length\n");
@@ -331,12 +327,11 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned lo
 	buffer[i] = name[i-3];
     }
     
-
     printf("write filelength\n");
     for(j = 0; j < 4; j++)
     {
 	buffer[++i] = (char) ( (filelength >> (j*8) ) & 0xff )- 128;
-    }
+   	}
 
     printf("Done.\n");
 
