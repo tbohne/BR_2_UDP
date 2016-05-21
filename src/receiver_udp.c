@@ -111,8 +111,10 @@ int main (int argc, char *argv[]) {
 		printf(timeout_error);
 		exit(1);
 	}
+
+	printf("Received %d bytes...\n", err);
 	
-	headerstate = (unsigned char) buff[0]+128;
+	headerstate = (unsigned char) buff[0];
 	if(headerstate != state)
 	{
 	    printf(packet_error);
@@ -202,15 +204,16 @@ int main (int argc, char *argv[]) {
 
 
 	    //read header state
-            headerstate = (unsigned char) buff[0]+128;
+            headerstate = (unsigned char) buff[0];
 	    if(headerstate != state)
 	    {
 		printf(packet_error);
+		printf("Wrong Headerstate in file transfer\n");
 		exit(1);
 	    }
 
             //read sequence number
-	    readSeqNr =  (unsigned long) (  ( buff[1]+128 ) | ( (buff[2]+128) << 8 ) | ( (buff[3]+128) << 16 ) | ( (buff[4]+128) << 24 ) );
+	    readSeqNr =  (unsigned long) (  ( buff[1] ) | ( (buff[2]) << 8 ) | ( (buff[3]) << 16 ) | ( (buff[4]) << 24 ) );
 	    if(seqNr != readSeqNr)
 	    {
 		printf(order_error);
@@ -249,15 +252,17 @@ int main (int argc, char *argv[]) {
 	if(err != SHA_DIGEST_LENGTH*2+1 )
 	{
 	    printf(SHA1_ERROR);
+	    printf("Wrong Sha-Package length\n");
 	    return 1;
 	}
 
 
 	//receive header
-	headerstate = (unsigned char) buff[0]+128;
+	headerstate = (unsigned char) buff[0];
 	if(headerstate != SHA1_T)
 	{
 	    printf(packet_error);
+	    printf("Wrong ID\n");
 	    exit(1);
 	}
 
@@ -303,7 +308,7 @@ int main (int argc, char *argv[]) {
 	/******* SEND SHA COMPARE RESULT ******/
 
 	//prepare id
-	buff[0] = SHA1_CMP_T-128;
+	buff[0] = SHA1_CMP_T;
 
 	//prepare compare result
 	buff[1] = sha1_CMP;
@@ -317,7 +322,7 @@ int main (int argc, char *argv[]) {
 	}
 
 
-	/******* OTHER STUFF ******/
+	/******* CLEAN UP ******/
 
 
 	// Close Socket
@@ -340,7 +345,7 @@ void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname,
 
     //printf("Reading...\n");
 
-    *readnlength = (unsigned short) (  ( buffer[1]+128 ) | ( (buffer[2]+128) << 8 ) );
+    *readnlength = (unsigned short) (  ( buffer[1] ) | ( (buffer[2]) << 8 ) );
     //printf("name length is %d\n", *readnlength);
 
    
@@ -363,8 +368,9 @@ void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname,
     //printf("\n");
 
     *readrealname = readname;
-    
-    /*for(j = i; j < i+4; j++)
+
+    /*
+    for(j = i; j < i+4; j++)
     {
 	printf("Buffer[%d]==%d\n",j,buffer[j]);
 	}*/
@@ -372,48 +378,17 @@ void parseHeader(char* buffer, unsigned short *readnlength, char **readrealname,
     //printf("I is %d\n", i);
 
     *readfilelength = 0;
+    //buffer[11]=0;
     for(j = 0; j < 4; j++)
     {
-	*readfilelength = *readfilelength | ( ( buffer[++i]+128)<<(j*8));
+	*readfilelength = *readfilelength | ( ( (unsigned char) buffer[i++])<<(j*8));
 	//printf("Buffer[%d]==%d\n",i,buffer[i]);
 	//printf("readfilelength = %d\n", *filelength);
     }
+    
 
     //printf("file length is %lu\n", *readfilelength);
 
 
 
 }
-
-
-/*
-char* getSha1(char *buff, int bufferlength)
-{
-    int i = 0;
-    unsigned char temp[SHA_DIGEST_LENGTH];
-    char *shaBuf;
-    char *sha1;
-
-    shaBuf = calloc(SHA_DIGEST_LENGTH*2+1,1);
- 
-    bzero(shaBuf, SHA_DIGEST_LENGTH*2);
-    bzero(temp, SHA_DIGEST_LENGTH);
-
-    
-    //memset(buf, 0x0, SHA_DIGEST_LENGTH*2);
-    //memset(temp, 0x0, SHA_DIGEST_LENGTH);
-
-    sha1 = buff;
-    
-    SHA1((unsigned char *)sha1, bufferlength, temp);
- 
-    for (i=0; i < SHA_DIGEST_LENGTH; i++) {
-        sprintf((char*)&(shaBuf[i*2]), "%02x", temp[i]);
-    }
- 
-    
-    
-    return shaBuf;
-
-
-    }*/

@@ -117,7 +117,7 @@ int main (int argc, char *argv[]) {
 	bzero(buff, BUFFERSIZE);
 
 	// To satisfy the MTU of a PPPoE-Connection (max package size)
-	if ((bufferlength = nlength + 8) > BUFFERSIZE) {
+	if ((bufferlength = nlength + 7) > BUFFERSIZE) {
 		printf("Exceeded maximum package size.");
 		exit(1);
 	}
@@ -168,13 +168,13 @@ int main (int argc, char *argv[]) {
 	
 	printf("Commencing file transmission\n");
 	do {
-	    buff[0] = DATA_T-128;  //Yes, we're sending data!
+	    buff[0] = DATA_T;  //Yes, we're sending data!
 
 	    //put sequence number into next 4 bytes of buffer
 	    for(i = 1; i < 5; i++)
 	    {
 		
-		buff[i] = (char) ( (seqNr >> ( (i-1)*8) ) & 0xff )- 128;
+		buff[i] = (char) ( (seqNr >> ( (i-1)*8) ) & 0xff );
 	    }
 
 	    seqNr++;
@@ -221,7 +221,7 @@ int main (int argc, char *argv[]) {
 	//printf("SHA1 of buffer is %s\n", shaVal);	
 
 	//prepare transmitting of sha-1
-	buff[0] = SHA1_T-128;
+	buff[0] = SHA1_T;
 
 	for(i = 1; i<SHA_DIGEST_LENGTH*2+1; i++)
 	{
@@ -256,7 +256,7 @@ int main (int argc, char *argv[]) {
 	}
 
 	//check header
-	if(buff[0]+128 != SHA1_CMP_T)
+	if(buff[0] != SHA1_CMP_T)
 	{
 	    printf(SHA1_ERROR);
 	}
@@ -273,22 +273,12 @@ int main (int argc, char *argv[]) {
 	}
 	
 
-	/******** ALL THE OTHER STUFF *******/
+	/******** CLEAN UP *******/
 
-	    
-	//await ok-response
-	
-	//printf("Got an ACK! %s Port: %d\n", inet_ntoa(from.sin_addr), htons(from.sin_port));
-
-	
 	
 	// Close Socket
 	close(sockfd);
-	//free(buff);
 	fclose(file);
-	
-
-	
 	free(shaBuffer);
 	free(shaVal);
 	
@@ -312,56 +302,25 @@ void prepareHeader(char *buffer, unsigned short nlength, char *name, unsigned in
 
     printf("Write header & length\n");
     //TYPE-ID
-    buffer[0] = (char) HEADER_T-128;
-    buffer[1] = (char) (nlength & 0xff)-128;
-    buffer[2] = (char) ((nlength >> 8) & 0xff)-128;
+    buffer[0] = (char) HEADER_T;
+    buffer[1] = (char) (nlength & 0xff);
+    buffer[2] = (char) ((nlength >> 8) & 0xff);
 
     printf("Write name\n");
     for(i=3; i<nlength+3; i++)
     {
 	buffer[i] = name[i-3];
     }
-    
+    printf("Size of unsigned int is %lu\n", sizeof(unsigned int));
     printf("write filelength\n");
     for(j = 0; j < 4; j++)
     {
-	buffer[++i] = (char) ( (filelength >> (j*8) ) & 0xff )- 128;
-   	}
+	buffer[i++] = (char) ( (filelength >> (j*8) ) & 0xff );
+	/*printf("Buffer[%d]==%d\n",i,buffer[i]);
+	  i++;*/
+    }
+    //buffer[11] = -32;
 
     printf("Done.\n");
 
 }
-
-/*
-char* getSha1(char *buff, int bufferlength)
-{
-    int i = 0;
-    unsigned char temp[SHA_DIGEST_LENGTH];
-    char *shaBuf;
-    char *sha1;
-
-    shaBuf = calloc(SHA_DIGEST_LENGTH*2+1,1);
- 
-    //bzero(shaBuf, SHA_DIGEST_LENGTH*2);
-    bzero(temp, SHA_DIGEST_LENGTH);
-
-    
-    //memset(buf, 0x0, SHA_DIGEST_LENGTH*2);
-    //memset(temp, 0x0, SHA_DIGEST_LENGTH);
-
-    sha1 = buff;
-    
-    SHA1((unsigned char *)sha1, bufferlength, temp);
- 
-    for (i=0; i < SHA_DIGEST_LENGTH; i++) {
-        sprintf((char*)&(shaBuf[i*2]), "%02x", temp[i]);
-    }
- 
-    printf("SHA1 of buffer is %s\n", shaBuf);
-	
-    
-    return shaBuf;
-
-
-}
-*/
