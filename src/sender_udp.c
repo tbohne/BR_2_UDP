@@ -31,7 +31,7 @@ int main (int argc, char *argv[]) {
 	int fd;                  //file descriptor for getting length
 	FILE* file;              //file stream
 	struct stat filebuf;     //file stats
-	unsigned long seqNr;     //number of package to be sent
+	unsigned int seqNr;     //number of package to be sent
 	char filedatabuff[BUFFERSIZE-5];      //contains data of file
 	int i;  //magic number that makes the program work.
 	char *shaBuffer;  //holds the complete file across all data packages
@@ -199,11 +199,11 @@ int main (int argc, char *argv[]) {
 		err = sendto(sockfd, buff, readbytes+5, 0, (struct sockaddr *)&to, length);
 		if( err != readbytes+5 )
 		{
-		    printf("Sending data package %lu failed",seqNr);
+		    printf("Sending data package %d failed",seqNr);
 		    return 1;
 		}
 
-		printf("Sent package %lu containing %zu bytes\n", seqNr, readbytes);
+		printf("Sent package %d containing %zu bytes\n", seqNr, readbytes);
 	    }
 	}while(readbytes == BUFFERSIZE-5);  //once readbytes is less than BUFFERSIZE-5 eof was reached and we're finished.
 	
@@ -242,9 +242,6 @@ int main (int argc, char *argv[]) {
 
 	/****** RECEIVE SHA COMPARE RESULT ******/
 
-
-	/************* NEW ******************/
-
 	timeout.tv_sec = WAIT;
 	timeout.tv_usec = 0;
 	// Set socket options for a possible timeout
@@ -257,8 +254,6 @@ int main (int argc, char *argv[]) {
 	    printf(timeout_error);
 	    exit(1);
 	}
-
-	/***********************************/
 
 	//check header
 	if(buff[0]+128 != SHA1_CMP_T)

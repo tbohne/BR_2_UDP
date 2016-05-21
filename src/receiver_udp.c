@@ -101,9 +101,6 @@ int main (int argc, char *argv[]) {
 	/****** RECEIVE HEAD *******/
 	state = HEADER_T;
 	
-
-	/************* NEW ******************/
-
 	timeout.tv_sec = WAIT;
 	timeout.tv_usec = 0;
 
@@ -115,10 +112,6 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	
-	/***********************************/
-	
-
-
 	headerstate = (unsigned char) buff[0]+128;
 	if(headerstate != state)
 	{
