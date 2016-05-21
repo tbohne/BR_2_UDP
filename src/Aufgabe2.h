@@ -37,6 +37,8 @@ static const char* const filesize_str 	= "\x1b[33mFilesize: %d bytes\x1b[0m\n";
 /****** OWN DEFINITIONS START HERE *******/
 #define WAIT 10
 // MTU: PPPoE <= 1492 Bytes (-20 for IP-Header, -8 for UDP-Header)
+
+//IMPORTANT. Set this to determine maximum size of packages to be sent.
 #define BUFFERSIZE 512
 #define MAXPATHLENGTH 80
 
